@@ -218,3 +218,16 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Third Party Libraries
+#   Ignore directories containing third-party libraries that are not part of the project.
+#   This is useful for projects that include third-party libraries in the source tree.
+# moshpp/
+# mesh/
+
+# Data files
+#   Ignore directories containing data files that are collected as part of the project.
+mocap_data/data/
+
+# IDE settings
+.vscode/

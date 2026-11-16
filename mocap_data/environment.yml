@@ -1,0 +1,17 @@
+name: mocap_data
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.12
+  - pip
+  - numpy>=2.0
+  - pandas>=2.2
+  - scipy>=1.14
+  - h5py>=3.12
+  - pyyaml>=6.0
+  - pip:
+      - mujoco>=3.3,<4
+      - olefile>=0.46,<1
+
