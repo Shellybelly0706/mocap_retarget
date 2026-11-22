@@ -11,6 +11,7 @@ dependencies:
   - scipy>=1.14
   - h5py>=3.12
   - pyyaml>=6.0
+  - matplotlib-base>=3.8
   - pip:
       - mujoco>=3.3,<4
       - olefile>=0.46,<1

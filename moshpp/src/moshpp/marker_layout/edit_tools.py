@@ -61,7 +61,10 @@ else:
     from typing_extensions import TypedDict
 
 from typing import Dict
-from pytorch3d.structures import Meshes
+try:
+    from pytorch3d.structures import Meshes
+except ImportError:
+    Meshes = None
 from human_body_prior.tools.omni_tools import get_support_data_dir
 
 
@@ -290,6 +293,11 @@ def marker_layout_as_mesh(surface_model_fname: Union[str, Path],
                           ceasar_pose: bool = False,
                           preserve_vertex_order: bool = False,
                           surface_model_type=None):
+    if Meshes is None:
+        raise ImportError(
+            'marker_layout_as_mesh requires pytorch3d, but marker layout loading and MoSh++ fitting do not.'
+        )
+
     marker_radius = {'body': 0.009, 'face': 0.004, 'finger': 0.005}
 
     if ceasar_pose:

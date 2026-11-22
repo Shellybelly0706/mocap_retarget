@@ -5,7 +5,7 @@ Create and verify the environment with:
 ```bash
 conda env create -f environment.yml
 conda activate mocap_data
-python -c "import olefile, numpy, pandas, scipy, h5py, mujoco; print('environment OK')"
+python -c "import olefile, numpy, pandas, scipy, h5py, matplotlib, mujoco; print('environment OK')"
 ```
 
 The environment supports:
@@ -14,6 +14,7 @@ The environment supports:
 - parsing an OptiTrack CSV and writing CSV, pickle, NPZ, or HDF5 data;
 - coordinate and quaternion conversion;
 - MuJoCo loading, playback, and retargeting code.
+- interactive SMPL-X marker-layout editing with Matplotlib's Tk backend.
 
 ## View the 1105 CSV takes in MuJoCo
 

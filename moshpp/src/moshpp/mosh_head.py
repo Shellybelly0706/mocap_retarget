@@ -326,18 +326,21 @@ class MoSh:
             body_parms['betas'] =  torch.Tensor(mosh_stagei['betas'][:num_betas][None])
             body_parms['num_betas'] =  num_betas
         surface_model_type = mosh_stagei['stagei_debug_details']['cfg']['surface_model']['type']
-        marker_layout_as_mesh(surface_model_fname,
-                              preserve_vertex_order=True,
-                              body_parms=body_parms,
-                              surface_model_type= surface_model_type)(out_marker_layout_fname,output_ply_fname)
-        marker_layout_to_c3d(out_marker_layout_fname,
-                             surface_model_fname=surface_model_fname,
-                             out_c3d_fname=output_c3d_fname,
-                             surface_model_type= surface_model_type)
-
         logger.info(f'created {out_marker_layout_fname}')
-        logger.info(f'created {output_ply_fname}')
-        logger.info(f'created {output_c3d_fname}')
+        try:
+            marker_layout_as_mesh(surface_model_fname,
+                                  preserve_vertex_order=True,
+                                  body_parms=body_parms,
+                                  surface_model_type=surface_model_type)(out_marker_layout_fname, output_ply_fname)
+            marker_layout_to_c3d(out_marker_layout_fname,
+                                 surface_model_fname=surface_model_fname,
+                                 out_c3d_fname=output_c3d_fname,
+                                 surface_model_type=surface_model_type)
+        except ImportError as exc:
+            logger.warning(f'Skipping optional marker-layout PLY/C3D export: {exc}')
+        else:
+            logger.info(f'created {output_ply_fname}')
+            logger.info(f'created {output_c3d_fname}')
 
     @staticmethod
     def load_as_amass_npz_legacy(stageii_pkl_data_or_fname: Union[dict, Union[str, Path]],

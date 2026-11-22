@@ -2,9 +2,10 @@
 """Safely initialize, edit, and validate a MoSh++ SMPL-X marker layout.
 
 Only exact labels from MoSh++'s marker database (or an explicit alias in its
-``labels_map.py``) are eligible for automatic transfer. All other assignments
-must be made by a user with Shift+click on the exact SMPL-X neutral topology
-that will be used by MoSh++. Unknown markers remain JSON ``null``.
+``labels_map.py``), or exact labels from an explicitly supplied reference
+layout, are eligible for automatic transfer. All other assignments must be
+made by a user with Shift+click on the exact SMPL-X neutral topology that will
+be used by MoSh++. Unknown markers remain JSON ``null``.
 
 The editor never infers anatomical locations from marker names or trajectories.
 """
@@ -123,7 +124,9 @@ def load_npz_labels(path: Path) -> tuple[str, ...]:
 
 
 def load_c3d_labels(
-    path: Path, moshpp_root: Path, marker_prefix: str | None = None
+    path: Path,
+    moshpp_root: Path,
+    marker_prefix: str | Sequence[str] | None = None,
 ) -> tuple[str, ...]:
     """Load C3D point labels with MoSh++'s bundled dependency-free reader."""
     if not path.is_file():
@@ -137,33 +140,62 @@ def load_c3d_labels(
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
-    with path.open("rb") as stream:
-        reader = module.Reader(stream)
-        raw_labels = reader.point_labels
+    # The bundled reader still uses the removed ``np.bool`` alias. Keep the
+    # compatibility shim scoped to reader construction so this editor also
+    # works with current NumPy releases without modifying MoSh++ itself.
+    had_numpy_bool = "bool" in np.__dict__
+    if not had_numpy_bool:
+        setattr(np, "bool", np.bool_)
+    try:
+        with path.open("rb") as stream:
+            reader = module.Reader(stream)
+            raw_labels = reader.point_labels
+    finally:
+        if not had_numpy_bool:
+            delattr(np, "bool")
+
+    marker_prefixes = marker_prefix
+    if isinstance(marker_prefixes, str):
+        marker_prefixes = (marker_prefixes,)
+    wanted_prefixes = tuple(
+        prefix.rstrip(":") + ":" for prefix in (marker_prefixes or ())
+    )
+    if len(wanted_prefixes) != len(set(wanted_prefixes)):
+        raise ValueError(f"C3D marker prefixes must be unique: {wanted_prefixes}")
 
     labels = []
-    wanted_prefix = None
-    if marker_prefix:
-        wanted_prefix = marker_prefix.rstrip(":") + ":"
+    source_labels: dict[str, str] = {}
     for raw_label in raw_labels:
         if isinstance(raw_label, bytes):
             label = raw_label.decode("utf-8", errors="replace")
         else:
             label = str(raw_label)
         label = label.rstrip("\x00 ").strip()
-        if not label or (wanted_prefix and not label.startswith(wanted_prefix)):
+        if not label:
+            continue
+        matched_prefix = next(
+            (prefix for prefix in wanted_prefixes if label.startswith(prefix)), None
+        )
+        if wanted_prefixes and matched_prefix is None:
             continue
         # MocapSession, which MoSh++ uses for C3D input, removes the subject
         # namespace before matching observations to marker-layout labels.
-        if wanted_prefix:
-            label = label[len(wanted_prefix) :]
+        original_label = label
+        if matched_prefix is not None:
+            label = label[len(matched_prefix) :]
+        if label in source_labels:
+            if source_labels[label] == original_label:
+                raise ValueError(f"C3D point labels are not unique: {[original_label]}")
+            # Multiple selected Motive assets may contain the same suffix
+            # (for example body and hand assets both containing RWristIn).
+            # MoSh++ strips both namespaces, so the layout must contain this
+            # normalized marker name exactly once.
+            continue
+        source_labels[label] = original_label
         labels.append(label)
     if not labels:
-        detail = f" with prefix {wanted_prefix!r}" if wanted_prefix else ""
+        detail = f" with prefixes {wanted_prefixes!r}" if wanted_prefixes else ""
         raise ValueError(f"C3D contains no point labels{detail}: {path}")
-    if len(labels) != len(set(labels)):
-        duplicates = sorted(label for label, count in Counter(labels).items() if count > 1)
-        raise ValueError(f"C3D point labels are not unique: {duplicates}")
     return tuple(labels)
 
 
@@ -244,6 +276,7 @@ def make_initial_layout(
     source_path: Path,
     moshpp_root: Path,
     auto_match: bool,
+    reference_layout_path: Path | None = None,
 ) -> tuple[dict[str, Any], dict[str, int]]:
     matches: dict[str, int] = {}
     sources: dict[str, dict[str, Any]] = {}
@@ -251,6 +284,29 @@ def make_initial_layout(
     alias_file = moshpp_root / "src/moshpp/marker_layout/labels_map.py"
     if auto_match:
         matches, sources, marker_file, alias_file = exact_official_matches(labels, moshpp_root)
+    reference_metadata: Mapping[str, Any] = {}
+    if reference_layout_path is not None:
+        reference_layout = read_json(reference_layout_path)
+        if reference_layout.get("surface_model_type") != "smplx":
+            raise ValueError("Reference layout surface_model_type must be exactly 'smplx'")
+        reference_indices = get_indices(reference_layout)
+        reference_sources = reference_layout.get("marker_sources", {})
+        reference_metadata_value = reference_layout.get("layout_metadata", {})
+        if isinstance(reference_metadata_value, Mapping):
+            reference_metadata = reference_metadata_value
+        for label in labels:
+            vertex = reference_indices.get(label)
+            if vertex is None:
+                continue
+            matches[label] = int(vertex)
+            source: dict[str, Any] = {
+                "method": "reference_layout_exact_label",
+                "reference_layout": str(reference_layout_path.resolve()),
+                "reference_label": label,
+            }
+            if isinstance(reference_sources, Mapping) and label in reference_sources:
+                source["reference_source"] = reference_sources[label]
+            sources[label] = source
     indices = {label: matches.get(label) for label in labels}
     layout: dict[str, Any] = {
         "surface_model_type": "smplx",
@@ -267,12 +323,18 @@ def make_initial_layout(
             "source_format": source_path.suffix.lower().lstrip("."),
             "official_marker_database": str(marker_file.resolve()),
             "official_alias_database": str(alias_file.resolve()),
-            "model_path": None,
-            "model_sha256": None,
-            "topology_vertex_count": None,
+            "reference_layout": (
+                str(reference_layout_path.resolve())
+                if reference_layout_path is not None
+                else None
+            ),
+            "model_path": reference_metadata.get("model_path"),
+            "model_sha256": reference_metadata.get("model_sha256"),
+            "topology_vertex_count": reference_metadata.get("topology_vertex_count"),
             "policy": (
-                "Only exact official labels/aliases are auto-filled; all other "
-                "vertices require manual surface clicks and may remain null."
+                "Only exact official labels/aliases and exact labels from the "
+                "explicit reference layout are auto-filled; all other vertices "
+                "require manual surface clicks and may remain null."
             ),
         },
     }
@@ -285,6 +347,7 @@ def initialize_layout(
     source_path: Path,
     moshpp_root: Path,
     auto_match: bool = True,
+    reference_layout_path: Path | None = None,
 ) -> tuple[dict[str, Any], dict[str, int], Path | None]:
     """Initialize only when absent or non-JSON; preserve any valid JSON layout."""
     if layout_path.exists():
@@ -292,11 +355,23 @@ def initialize_layout(
             existing = read_json(layout_path)
         except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
             backup = backup_once(layout_path)
-            layout, matches = make_initial_layout(labels, source_path, moshpp_root, auto_match)
+            layout, matches = make_initial_layout(
+                labels,
+                source_path,
+                moshpp_root,
+                auto_match,
+                reference_layout_path,
+            )
             atomic_json_write(layout_path, layout)
             return layout, matches, backup
         return existing, {}, None
-    layout, matches = make_initial_layout(labels, source_path, moshpp_root, auto_match)
+    layout, matches = make_initial_layout(
+        labels,
+        source_path,
+        moshpp_root,
+        auto_match,
+        reference_layout_path,
+    )
     atomic_json_write(layout_path, layout)
     return layout, matches, None
 
@@ -596,12 +671,38 @@ class MarkerLayoutEditor:
             + DISPLAY_MARKER_OFFSET_M * self.vertex_normals[ids]
         )
 
+    def _camera_location(self) -> np.ndarray:
+        """Return the 3-D camera location across supported Matplotlib versions."""
+        self.ax.get_proj()
+        get_camera_location = getattr(self.ax, "_get_camera_loc", None)
+        if callable(get_camera_location):
+            return np.asarray(get_camera_location(), dtype=float)
+
+        # Matplotlib 3.5 stores the camera in normalized world coordinates as
+        # ``Axes3D.eye`` but does not provide _get_camera_loc(). Undo the same
+        # world transformation used by Axes3D.get_proj() to recover data-space
+        # coordinates for ray casting.
+        from mpl_toolkits.mplot3d import proj3d
+
+        eye = getattr(self.ax, "eye", None)
+        if eye is None:
+            raise RuntimeError("Matplotlib did not expose a 3-D camera location")
+        box_aspect = self.ax._roll_to_vertical(self.ax._box_aspect)
+        world = proj3d.world_transformation(
+            *self.ax.get_xlim3d(),
+            *self.ax.get_ylim3d(),
+            *self.ax.get_zlim3d(),
+            pb_aspect=box_aspect,
+        )
+        homogeneous_eye = np.append(np.asarray(eye, dtype=float), 1.0)
+        data_eye = np.linalg.solve(world, homogeneous_eye)
+        if abs(data_eye[3]) <= 1e-12:
+            raise RuntimeError("Matplotlib returned an invalid 3-D camera location")
+        return data_eye[:3] / data_eye[3]
+
     def _vertex_is_visible(self, vertex_id: int) -> bool:
         """Return whether this surface vertex is the camera ray's first hit."""
-        # get_proj() initializes Matplotlib's private camera basis on the first
-        # frame; _get_camera_loc() otherwise fails before the initial draw.
-        self.ax.get_proj()
-        origin = np.asarray(self.ax._get_camera_loc(), dtype=float)
+        origin = self._camera_location()
         target = self.mesh.vertices[int(vertex_id)]
         direction = target - origin
         target_distance = float(np.linalg.norm(direction))
@@ -762,7 +863,7 @@ class MarkerLayoutEditor:
             ),
             dtype=float,
         ).reshape(3)
-        origin = np.asarray(self.ax._get_camera_loc(), dtype=float)
+        origin = self._camera_location()
         direction = target - origin
         direction_norm = np.linalg.norm(direction)
         if not np.isfinite(direction_norm) or direction_norm <= 1e-12:
@@ -909,23 +1010,48 @@ def report(
         if isinstance(sources.get(label), dict)
         and sources[label].get("method") == "official_exact_label"
     ]
+    referenced = [
+        label
+        for label in result.assigned
+        if isinstance(sources.get(label), dict)
+        and sources[label].get("method") == "reference_layout_exact_label"
+    ]
+    equivalent = [
+        label
+        for label in result.assigned
+        if isinstance(sources.get(label), dict)
+        and sources[label].get("method") == "reference_layout_equivalent_label"
+    ]
     manual = [
         label
         for label in result.assigned
         if isinstance(sources.get(label), dict)
         and sources[label].get("method") == "manual_surface_click"
     ]
-    other = [label for label in result.assigned if label not in automatic and label not in manual]
+    other = [
+        label
+        for label in result.assigned
+        if label not in automatic
+        and label not in referenced
+        and label not in equivalent
+        and label not in manual
+    ]
     print("\n=== SMPL-X marker layout validation ===")
     order_note = "exact order" if source_kind == "NPZ" else "set match; C3D order is ignored"
     print(f"labels: {len(result.labels)} ({source_kind} label {order_note})")
     print(f"vertex topology size: {result.vertex_count if result.vertex_count is not None else 'not available'}")
     print(f"automatic exact matches: {len(automatic)}")
+    print(f"reference-layout exact matches: {len(referenced)}")
+    print(f"reference-layout equivalent-label matches: {len(equivalent)}")
     print(f"manual assignments: {len(manual)}")
     print(f"assigned without provenance: {len(other)}")
     print(f"unassigned/null: {len(result.unassigned)}")
     if automatic:
         print("Automatic: " + ", ".join(automatic))
+    if referenced:
+        print("Reference layout: " + ", ".join(referenced))
+    if equivalent:
+        print("Equivalent labels: " + ", ".join(equivalent))
     if manual:
         print("Manual: " + ", ".join(manual))
     if other:
@@ -948,10 +1074,20 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     source.add_argument("--c3d", type=Path, help="Motive C3D supplying point labels")
     parser.add_argument(
         "--marker-prefix",
+        action="append",
         help=(
-            "For C3D input, keep only labels under this namespace "
-            "and strip it as MoSh++ does (for example Skeleton_Zixuan); "
-            "ignored for NPZ"
+            "For C3D input, keep labels under this namespace and strip it as "
+            "MoSh++ does (for example Skeleton_Zixuan). Repeat this option to "
+            "merge multiple Motive assets; normalized duplicate names are kept "
+            "once. Ignored for NPZ"
+        ),
+    )
+    parser.add_argument(
+        "--reference-layout",
+        type=Path,
+        help=(
+            "Existing SMPL-X marker-layout JSON from which exact matching labels "
+            "inherit vertex IDs; unmatched source labels remain null"
         ),
     )
     parser.add_argument(
@@ -987,6 +1123,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     layout_path = args.layout.expanduser().resolve()
     moshpp_root = args.moshpp_root.expanduser().resolve()
+    reference_layout_path = (
+        args.reference_layout.expanduser().resolve()
+        if args.reference_layout is not None
+        else None
+    )
+    if reference_layout_path is not None and not reference_layout_path.is_file():
+        raise FileNotFoundError(f"Reference layout does not exist: {reference_layout_path}")
     if args.npz is not None:
         source_path = args.npz.expanduser().resolve()
         source_kind = "NPZ"
@@ -1007,13 +1150,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             source_path,
             moshpp_root,
             auto_match=not args.no_auto_match,
+            reference_layout_path=reference_layout_path,
         )
     if backup is not None:
         print(f"Preserved original bytes at: {backup}")
     if matches:
-        print(f"Applied {len(matches)} exact official label/alias match(es).")
+        print(f"Applied {len(matches)} automatic marker assignment(s).")
     else:
-        print("Applied 0 exact official label/alias matches.")
+        print("Applied 0 automatic marker assignments.")
 
     mesh = load_smplx_mesh(args.model.expanduser().resolve()) if args.model else None
     result = validate_layout(

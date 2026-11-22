@@ -127,9 +127,17 @@ def load_surface_model(surface_model_fname,
         pose_body_dof = njoint_parms + 3
         dd['pose'] = ch.zeros(pose_body_dof)
 
+    # The precompiled psbody.smpl derivative extension is built against
+    # np_double_t and therefore requires contiguous float64 model buffers.
+    # Current SMPL-X releases store several of these arrays as float32.
+    for key in ['v_template', 'shapedirs', 'posedirs', 'weights']:
+        dd[key] = np.ascontiguousarray(dd[key], dtype=np.float64)
+
     Jreg = dd['J_regressor']
-    if not sp.issparse(Jreg):
-        dd['J_regressor'] = (sp.csc_matrix((Jreg.data, (Jreg.row, Jreg.col)), shape=Jreg.shape))
+    if sp.issparse(Jreg):
+        dd['J_regressor'] = Jreg.astype(np.float64).tocsc()
+    else:
+        dd['J_regressor'] = sp.csc_matrix(np.asarray(Jreg, dtype=np.float64))
 
     dd['model_type'] = model_type
     dd['trans'] = ch.zeros(3)
