@@ -12,6 +12,7 @@ from moshpp.mosh_head import MoSh, run_moshpp_once
 
 ROOT = Path("/media/fiona/LinuxData/mocap_retarget")
 MODEL_DIR = ROOT / "mocap_data/data/smplx"
+HEAD_MARKERS = ("HeadTop", "HeadFront", "HeadSide")
 
 SEQUENCES = {
     "upper": {
@@ -45,6 +46,10 @@ SEQUENCES = {
         "least_avail_markers": 1.0,
         "optimize_fingers": True,
         "output_suffix": "_fingers",
+        # This take begins with a measured upright, stationary calibration
+        # pose. Put it first, then retain diverse frames for shape/marker fit.
+        "head_calibration_frame": 0,
+        "stagei_frame_ids": (0, 1052, 1783, 75, 27, 856, 110, 908, 241, 173, 31, 1158),
     },
 }
 
@@ -82,11 +87,20 @@ def build_overrides(mode, sequence):
     c3d = sequence_cfg["c3d"]
     marker_layout = sequence_cfg["marker_layout"]
     markers = load_layout_markers(marker_layout)
-    output_name = "{}{}_{}".format(
-        c3d.stem, sequence_cfg["output_suffix"], mode
-    )
+    head_calibration_frame = sequence_cfg.get("head_calibration_frame")
+    stagei_frame_ids = sequence_cfg.get("stagei_frame_ids")
+    if head_calibration_frame is None:
+        output_name = "{}{}_{}".format(
+            c3d.stem, sequence_cfg["output_suffix"], mode
+        )
+    else:
+        if not stagei_frame_ids or head_calibration_frame not in stagei_frame_ids:
+            raise ValueError("The head calibration frame must be selected for Stage I")
+        output_name = "{}{}_head_calibrated_{}".format(
+            c3d.stem, sequence_cfg["output_suffix"], mode
+        )
 
-    return {
+    overrides = {
         "mocap.fname": str(c3d),
         "mocap.unit": "m",
         # The source C3D is Z-up; SMPL-X/MoSh++ expects Y-up.
@@ -129,6 +143,26 @@ def build_overrides(mode, sequence):
         "runtime.stagei_only": False,
     }
 
+    if head_calibration_frame is not None:
+        stagei_frame_names = [f"{c3d}_{frame_id}" for frame_id in stagei_frame_ids]
+        # Keep the three marker locations optimizable. Only the known-upright
+        # calibration frame anchors the SMPL-X neck/head rotations, resolving
+        # the constant-rotation ambiguity without freezing marker placement.
+        overrides.update(
+            {
+                "moshpp.head_marker_labels": list(HEAD_MARKERS),
+                "moshpp.head_marker_max_offset": None,
+                "moshpp.head_pose_anchor_frame_indices": [
+                    stagei_frame_ids.index(head_calibration_frame)
+                ],
+                "moshpp.stagei_frame_picker.type": "manual",
+                "moshpp.stagei_frame_picker.num_frames": len(stagei_frame_names),
+                "moshpp.stagei_frame_picker.stagei_mocap_fnames": stagei_frame_names,
+            }
+        )
+
+    return overrides
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -139,6 +173,11 @@ def main():
         help="Input C3D/layout profile (default: upper).",
     )
     parser.add_argument("--mode", choices=("smoke", "full"), default="smoke")
+    parser.add_argument(
+        "--stagei-only",
+        action="store_true",
+        help="Stop after Stage I so its calibration can be inspected.",
+    )
     parser.add_argument(
         "--check-only",
         action="store_true",
@@ -160,6 +199,7 @@ def main():
             raise FileNotFoundError(required_path)
 
     overrides = build_overrides(args.mode, args.sequence)
+    overrides["runtime.stagei_only"] = args.stagei_only
     resolved = MoSh.prepare_cfg(**overrides)
     stage_i = Path(str(resolved.dirs.stagei_fname))
     stage_ii = Path(str(resolved.dirs.stageii_fname))
@@ -192,6 +232,13 @@ def main():
         return
 
     run_moshpp_once(overrides)
+
+    if args.stagei_only:
+        if not stage_i.exists():
+            raise RuntimeError("Stage I did not produce the expected file: {}".format(stage_i))
+        print("Stage I completed successfully; Stage II was not started.")
+        print("Saved:", stage_i)
+        return
 
     if not stage_ii.exists():
         raise RuntimeError("Stage II did not produce the expected file: {}".format(stage_ii))

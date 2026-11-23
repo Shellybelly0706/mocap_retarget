@@ -87,7 +87,7 @@ def project(points, horizontal_index, bounds, panel_height, mirror=False):
 
 
 def render_panel(vertices, faces, markers_obs, markers_sim, horizontal_index,
-                 depth_index, bounds, width, height, title):
+                 depth_index, bounds, width, height, title, show_markers=True):
     panel = np.full((height, width, 3), 248, dtype=np.uint8)
     points_2d = project(vertices, horizontal_index, bounds, height)
     triangles = points_2d[faces]
@@ -108,12 +108,13 @@ def render_panel(vertices, faces, markers_obs, markers_sim, horizontal_index,
     cv2.polylines(panel, triangles[::64], True, (115, 115, 125), 1,
                   lineType=cv2.LINE_AA)
 
-    obs_2d = project(markers_obs, horizontal_index, bounds, height)
-    sim_2d = project(markers_sim, horizontal_index, bounds, height)
-    for point in obs_2d:
-        cv2.circle(panel, tuple(point), 5, (45, 45, 230), -1, cv2.LINE_AA)
-    for point in sim_2d:
-        cv2.circle(panel, tuple(point), 3, (45, 200, 70), -1, cv2.LINE_AA)
+    if show_markers:
+        obs_2d = project(markers_obs, horizontal_index, bounds, height)
+        sim_2d = project(markers_sim, horizontal_index, bounds, height)
+        for point in obs_2d:
+            cv2.circle(panel, tuple(point), 5, (45, 45, 230), -1, cv2.LINE_AA)
+        for point in sim_2d:
+            cv2.circle(panel, tuple(point), 3, (45, 200, 70), -1, cv2.LINE_AA)
 
     cv2.putText(panel, title, (18, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                 (35, 35, 35), 2, cv2.LINE_AA)
@@ -129,6 +130,11 @@ def main():
     parser.add_argument("--max-frames", type=int)
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--height", type=int, default=720)
+    parser.add_argument(
+        "--hide-markers",
+        action="store_true",
+        help="Render only the avatar mesh (useful for post-processed poses)",
+    )
     args = parser.parse_args()
 
     if args.stride < 1:
@@ -177,12 +183,12 @@ def main():
         front = render_panel(
             vertices[output_index], faces, markers_obs[output_index],
             markers_sim[output_index], 2, 0, front_bounds,
-            panel_width, args.height, "Front view",
+            panel_width, args.height, "Front view", not args.hide_markers,
         )
         side = render_panel(
             vertices[output_index], faces, markers_obs[output_index],
             markers_sim[output_index], 0, 2, side_bounds,
-            panel_width, args.height, "Side view",
+            panel_width, args.height, "Side view", not args.hide_markers,
         )
         frame = np.concatenate((front, side), axis=1)
         cv2.putText(
@@ -193,12 +199,13 @@ def main():
             (18, args.height - 48), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
             (30, 30, 30), 2, cv2.LINE_AA,
         )
-        cv2.circle(frame, (22, args.height - 22), 5, (45, 45, 230), -1)
-        cv2.putText(frame, "observed marker", (34, args.height - 16),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (45, 45, 120), 1, cv2.LINE_AA)
-        cv2.circle(frame, (180, args.height - 22), 4, (45, 200, 70), -1)
-        cv2.putText(frame, "fitted marker", (191, args.height - 16),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (30, 120, 45), 1, cv2.LINE_AA)
+        if not args.hide_markers:
+            cv2.circle(frame, (22, args.height - 22), 5, (45, 45, 230), -1)
+            cv2.putText(frame, "observed marker", (34, args.height - 16),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (45, 45, 120), 1, cv2.LINE_AA)
+            cv2.circle(frame, (180, args.height - 22), 4, (45, 200, 70), -1)
+            cv2.putText(frame, "fitted marker", (191, args.height - 16),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (30, 120, 45), 1, cv2.LINE_AA)
         writer.write(frame)
 
         if (output_index + 1) % 50 == 0 or output_index + 1 == len(frame_ids):
