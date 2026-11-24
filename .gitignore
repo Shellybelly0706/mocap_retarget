@@ -229,6 +229,8 @@ __marimo__/
 #   Ignore directories containing data files that are collected as part of the project.
 mocap_data/data/
 moshpp_outputs/
+pupil_labs/
+neon_realtime/neon_data/
 
 # IDE settings
 .vscode/

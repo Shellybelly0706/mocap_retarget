@@ -28,6 +28,7 @@ by four to 30 Hz.
 │   ├── fit_c3d_to_smplx.py       # C3D -> MoSh++ -> AMASS-style NPZ
 │   ├── render_moshpp_result.py    # headless mesh/marker MP4 renderer
 │   └── visualize_smplx_mujoco.py # skinned SMPL-X MuJoCo viewer
+├── neon_realtime/                 # Pupil Labs Neon Wi-Fi live receiver
 ├── mocap_data/
 │   ├── environment.yml           # Python 3.12 data/viewer environment
 │   ├── ENVIRONMENT.md            # data tooling notes
@@ -186,6 +187,18 @@ Common utilities under `mocap_data/scripts` include:
 
 Every script supports `--help`; inspection tools also provide a non-GUI
 `--check-only` or `--validate-only` mode where applicable.
+
+## Receive Pupil Labs Neon data over Wi-Fi
+
+The standalone receiver under [`neon_realtime/`](neon_realtime/) records live
+gaze, IMU, eye-event, and scene-camera streams from the Neon Companion App.
+See [`neon_realtime/README.md`](neon_realtime/README.md) for installation,
+network setup, output formats, and examples. A minimal session is:
+
+```bash
+python -m pip install -r neon_realtime/requirements.txt
+python -m neon_realtime --streams gaze imu
+```
 
 ## Licensing and citation
 

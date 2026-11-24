@@ -83,11 +83,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--start-frame", type=int, default=60)
     parser.add_argument("--speed", type=float, default=1.0)
-    parser.add_argument("--table-length", type=float, default=0.75)
-    parser.add_argument("--table-width", type=float, default=0.55)
+    parser.add_argument("--table-length", type=float, default=1.05)
+    parser.add_argument("--table-width", type=float, default=0.75)
     parser.add_argument("--table-thickness", type=float, default=0.045)
     parser.add_argument("--cup-height", type=float, default=0.16)
-    parser.add_argument("--cup-radius", type=float, default=0.032)
+    parser.add_argument("--cup-radius", type=float, default=0.040)
     parser.add_argument(
         "--contact-frame",
         type=int,
@@ -107,12 +107,9 @@ def parse_args() -> argparse.Namespace:
         help="Frames used to move the cup from the tabletop into full-hand contact.",
     )
     parser.add_argument(
-        "--animate-cup-pickup",
+        "--keep-cup-static",
         action="store_true",
-        help=(
-            "Enable the contact-constrained kinematic pickup. By default the "
-            "cup remains fixed because this motion never forms a closed grasp."
-        ),
+        help="Keep the cup on the table for the complete animation.",
     )
     parser.add_argument(
         "--no-loop", action="store_true", help="Pause on the final frame instead of looping."
@@ -349,6 +346,76 @@ def build_static_scene(
             np.linalg.norm(delta[active, :2], axis=1).min() - cup_radius
         )
 
+    def table_pose_toward_cup(
+        cup_xy: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Search a corner-anchored pose containing the cup without body overlap."""
+        slab_points: list[np.ndarray] = []
+        for skin in skin_frames:
+            in_slab_height = (
+                (skin[:, 2] < table_top_z)
+                & (skin[:, 2] > table_top_z - table_thickness)
+            )
+            shallow_hand_contact = (
+                hand_contact_region
+                & (skin[:, 2] >= table_top_z - 0.008)
+            )
+            slab_points.append(skin[in_slab_height & ~shallow_hand_contact, :2])
+        forbidden_points = np.concatenate(slab_points, axis=0)
+
+        poses: list[tuple[float, np.ndarray, np.ndarray, np.ndarray]] = []
+        original_axis_x = axis_x.copy()
+        for angle_degrees in range(0, 360, 2):
+            angle = np.deg2rad(angle_degrees)
+            candidate_axis_x = np.array([np.cos(angle), np.sin(angle)])
+            candidate_axis_y = np.array(
+                [-candidate_axis_x[1], candidate_axis_x[0]]
+            )
+            for corner_x in (-1.0, 1.0):
+                for corner_y in (-1.0, 1.0):
+                    candidate_center = (
+                        near_corner
+                        - corner_x * half_length * candidate_axis_x
+                        - corner_y * half_width * candidate_axis_y
+                    )
+                    cup_relative = cup_xy - candidate_center
+                    if (
+                        abs(cup_relative @ candidate_axis_x)
+                        + cup_footprint_radius
+                        > half_length
+                        or abs(cup_relative @ candidate_axis_y)
+                        + cup_footprint_radius
+                        > half_width
+                    ):
+                        continue
+                    relative = forbidden_points - candidate_center
+                    inside = (
+                        (np.abs(relative @ candidate_axis_x) < half_length)
+                        & (np.abs(relative @ candidate_axis_y) < half_width)
+                    )
+                    if np.any(inside):
+                        continue
+                    orientation_cost = 1.0 - abs(
+                        float(candidate_axis_x @ original_axis_x)
+                    )
+                    poses.append(
+                        (
+                            orientation_cost,
+                            candidate_center,
+                            candidate_axis_x,
+                            candidate_axis_y,
+                        )
+                    )
+        if not poses:
+            raise RuntimeError(
+                "Could not orient the enlarged tabletop around the touched "
+                "corner without intersecting the body"
+            )
+        _, table_center, table_axis_x, table_axis_y = min(
+            poses, key=lambda pose: pose[0]
+        )
+        return table_center, table_axis_x, table_axis_y
+
     if not animate_cup_pickup:
         # The fitted hand stays open, so a pickup would necessarily be an
         # artificial cup motion. Keep the cup fixed and move its tabletop
@@ -382,6 +449,7 @@ def build_static_scene(
             )
 
         cup_center = min(static_candidates, key=lambda item: item[0])[1]
+        table_center_xy, axis_x, axis_y = table_pose_toward_cup(cup_center[:2])
         cup_positions = np.repeat(
             cup_center[None, :], len(joint_positions), axis=0
         )
@@ -511,9 +579,10 @@ def build_static_scene(
         return normal_xy / normal_xy_norm
 
     palm_directions = [inner_palm_direction(skin) for skin in skin_frames]
-    # Do not allow a side-of-hand/back-of-hand solution. Eighty degrees gives
-    # the vertical cup enough freedom to meet a tilted palm while keeping its
-    # centre strictly inside the RHandIn-facing hemisphere.
+    # At the pickup frame the cup must be on the inner-palm side. Later poses do
+    # not always form a closed grasp, so the solver keeps any collision-free
+    # right-hand contact and rewards palm/index/thumb contact instead of forcing
+    # an impossible penetration.
     minimum_inner_palm_alignment = float(np.cos(np.deg2rad(80.0)))
     candidate_frames: list[list[tuple[np.ndarray, int]]] = []
     radial_samples = np.arange(
@@ -521,29 +590,37 @@ def build_static_scene(
         0.171,
         0.001,
     )
-    palm_contact_threshold = cup_radius + 0.001
-    finger_contact_threshold = cup_radius + 0.008
+    contact_gap = 0.0025
+    tabletop_cup_z = table_top_z + cup_half_height
+    vertical_grip_offset = (
+        tabletop_cup_z - skin_frames[grip_frame][palm_vertex, 2]
+    )
     for frame in range(pickup_frame + 1, len(joint_positions)):
         skin = skin_frames[frame]
         palm = skin[palm_vertex]
+        candidate_z = palm[2] + vertical_grip_offset
         nearby = (
-            (np.abs(skin[:, 2] - palm[2]) < cup_half_height)
+            (np.abs(skin[:, 2] - candidate_z) < cup_half_height)
             & (np.linalg.norm(skin[:, :2] - palm[:2], axis=1) < 0.25)
         )
         nearby_points = skin[nearby, :2]
         nearby_joints = dominant_joint[nearby]
         palm_patch_points = skin[palm_patch_vertices]
         palm_patch_points = palm_patch_points[
-            np.abs(palm_patch_points[:, 2] - palm[2])
+            np.abs(palm_patch_points[:, 2] - candidate_z)
             < cup_half_height,
             :2,
         ]
         palm_direction = palm_directions[frame]
         frame_candidates: list[tuple[np.ndarray, int]] = []
-        for angle_degrees in range(0, 360, 5):
+        angle_step = 2 if frame == grip_frame else 10
+        for angle_degrees in range(0, 360, angle_step):
             angle = np.deg2rad(angle_degrees)
             direction = np.array([np.cos(angle), np.sin(angle)])
-            if direction @ palm_direction < minimum_inner_palm_alignment:
+            if (
+                frame == grip_frame
+                and direction @ palm_direction < minimum_inner_palm_alignment
+            ):
                 continue
             centres = palm[:2] + radial_samples[:, None] * direction
             clearances = np.linalg.norm(
@@ -563,7 +640,7 @@ def build_static_scene(
                             [
                                 centres[candidate, 0],
                                 centres[candidate, 1],
-                                palm[2],
+                                candidate_z,
                             ]
                         ),
                     )
@@ -574,11 +651,12 @@ def build_static_scene(
                 continue
             centre_xy = centres[sample]
             distances = np.linalg.norm(nearby_points - centre_xy, axis=1)
-            palm_clearance = float(
-                np.linalg.norm(palm_patch_points - centre_xy, axis=1).min()
+            palm_gap = (
+                float(np.linalg.norm(palm_patch_points - centre_xy, axis=1).min())
+                - cup_radius
+                if len(palm_patch_points)
+                else np.inf
             )
-            if palm_clearance > palm_contact_threshold:
-                continue
             group_clearances: list[float] = []
             for group in finger_joint_groups:
                 group_mask = np.isin(nearby_joints, group)
@@ -587,16 +665,30 @@ def build_static_scene(
                     if np.any(group_mask)
                     else np.inf
                 )
-            contact_count = 1 + sum(
-                clearance < finger_contact_threshold
-                for clearance in group_clearances
+            group_gaps = [clearance - cup_radius for clearance in group_clearances]
+            index_contacting = group_gaps[0] <= contact_gap
+            thumb_contacting = group_gaps[4] <= contact_gap
+            palm_contacting = palm_gap <= contact_gap
+            hand_gap = float(distances.min() - cup_radius)
+            if hand_gap > contact_gap:
+                continue
+            if frame == grip_frame and not (
+                palm_contacting and index_contacting and thumb_contacting
+            ):
+                continue
+            primary_contacts = sum(
+                (palm_contacting, index_contacting, thumb_contacting)
             )
+            other_finger_contacts = sum(
+                gap <= contact_gap for gap in group_gaps[1:4]
+            )
+            contact_count = 3 * primary_contacts + other_finger_contacts
             frame_candidates.append(
-                (np.array([centre_xy[0], centre_xy[1], palm[2]]), contact_count)
+                (np.array([centre_xy[0], centre_xy[1], candidate_z]), contact_count)
             )
         if not frame_candidates:
             raise RuntimeError(
-                f"Could not find a collision-free palm contact at frame {frame}"
+                f"Could not find a collision-free right-hand contact at frame {frame}"
             )
         candidate_frames.append(frame_candidates)
 
@@ -647,88 +739,29 @@ def build_static_scene(
         ]
     )
 
-    cup_positions = np.repeat(cup_center[None, :], len(joint_positions), axis=0)
     grip_path_index = grip_frame - pickup_frame - 1
-    cup_positions[grip_frame:] = contact_path[grip_path_index:]
+    moving_path = contact_path[grip_path_index:].copy()
 
-    # Keep the cup completely stationary until the hand reaches it. Every
-    # moving transition frame must then be both collision-free and in direct
-    # contact with the right hand; there is no free-running interpolation.
-    contact_start_frame = next(
-        (
-            frame
-            for frame in range(pickup_frame, grip_frame + 1)
-            if not cup_intersects_skin(skin_frames[frame], cup_center)
-            and hand_clearance(skin_frames[frame], cup_center) <= 0.001
-        ),
-        None,
-    )
-    if contact_start_frame is None:
+    # Put the stationary cup at the horizontal position where the hand reaches
+    # it on the grip frame. The hand approaches the cup; the cup never travels
+    # toward an open hand.
+    cup_center = moving_path[0].copy()
+    cup_center[2] = tabletop_cup_z
+    cup_positions = np.repeat(cup_center[None, :], len(joint_positions), axis=0)
+    cup_positions[grip_frame:] = moving_path
+    contact_start_frame = grip_frame
+    table_center_xy, axis_x, axis_y = table_pose_toward_cup(cup_center[:2])
+
+    first_cup_local = cup_center[:2] - table_center_xy
+    first_cup_local_x = abs(first_cup_local @ axis_x)
+    first_cup_local_y = abs(first_cup_local @ axis_y)
+    if (
+        first_cup_local_x + cup_footprint_radius > half_length
+        or first_cup_local_y + cup_footprint_radius > half_width
+    ):
         raise RuntimeError(
-            "The hand never contacts the stationary cup before the grip frame"
+            "The complete cup footprint is not on the tabletop at frame 0"
         )
-
-    transition_frame_ids = list(range(contact_start_frame + 1, grip_frame))
-    transition_candidates: list[np.ndarray] = []
-    for frame in transition_frame_ids:
-        skin = skin_frames[frame]
-        palm = skin[palm_vertex]
-        frame_candidates: list[np.ndarray] = []
-        for angle_degrees in range(0, 360, 5):
-            angle = np.deg2rad(angle_degrees)
-            direction = np.array([np.cos(angle), np.sin(angle)])
-            for radius in radial_samples:
-                centre = np.array(
-                    [
-                        palm[0] + radius * direction[0],
-                        palm[1] + radius * direction[1],
-                        palm[2],
-                    ]
-                )
-                if cup_intersects_skin(skin, centre):
-                    continue
-                if hand_clearance(skin, centre) <= 0.001:
-                    frame_candidates.append(centre)
-                    break
-        if not frame_candidates:
-            raise RuntimeError(
-                f"No contact-constrained cup position at frame {frame}"
-            )
-        transition_candidates.append(np.asarray(frame_candidates))
-
-    if transition_candidates:
-        costs = np.linalg.norm(
-            transition_candidates[0] - cup_center, axis=1
-        ) ** 2
-        transition_back_pointers: list[np.ndarray] = []
-        for previous, current in zip(
-            transition_candidates[:-1], transition_candidates[1:], strict=True
-        ):
-            step_cost = np.linalg.norm(
-                current[:, None, :] - previous[None, :, :], axis=2
-            ) ** 2
-            total_cost = step_cost + costs[None, :]
-            back_pointer = np.argmin(total_cost, axis=1)
-            costs = total_cost[np.arange(len(current)), back_pointer]
-            transition_back_pointers.append(back_pointer)
-
-        grip_target = cup_positions[grip_frame]
-        costs += np.linalg.norm(
-            transition_candidates[-1] - grip_target, axis=1
-        ) ** 2
-        selected = int(np.argmin(costs))
-        selected_transition = [selected]
-        for back_pointer in reversed(transition_back_pointers):
-            selected = int(back_pointer[selected])
-            selected_transition.append(selected)
-        selected_transition.reverse()
-        for frame, candidates, selected in zip(
-            transition_frame_ids,
-            transition_candidates,
-            selected_transition,
-            strict=True,
-        ):
-            cup_positions[frame] = candidates[selected]
 
     # Keep the solid bottom above the tabletop until the cup has cleared its
     # footprint.  This correction is normally active only at the start of lift.
@@ -741,7 +774,7 @@ def build_static_scene(
         if still_over_table:
             cup_positions[frame, 2] = max(
                 cup_positions[frame, 2],
-                table_top_z + 0.002 + 0.5 * cup_height,
+                table_top_z + 0.5 * cup_height,
             )
 
     cup_quaternions = np.zeros((len(joint_positions), 4), dtype=np.float64)
@@ -776,9 +809,28 @@ def build_static_scene(
                 & (skin[:, 2] > 0.0)
                 & (skin[:, 2] < table_top_z - table_thickness)
             )
-        if np.any(in_tabletop | in_leg):
+        # The reaching fingers are meant to touch the tabletop corner. Permit
+        # only a small skin/render tolerance there; all non-hand and leg
+        # intersections remain invalid.
+        shallow_hand_contact = (
+            in_tabletop
+            & hand_contact_region
+            & (skin[:, 2] >= table_top_z - 0.008)
+        )
+        invalid_table_collision = (in_tabletop | in_leg) & ~shallow_hand_contact
+        if np.any(invalid_table_collision):
+            collision_type = "top" if np.any(in_tabletop & ~shallow_hand_contact) else "leg"
+            collision_ids = np.flatnonzero(invalid_table_collision)
+            maximum_depth = float(
+                np.max(table_top_z - skin[collision_ids, 2])
+            )
+            collision_joints = sorted(
+                set(int(joint) for joint in dominant_joint[collision_ids])
+            )
             raise RuntimeError(
-                f"Table intersects the SMPL-X skin at frame {frame}"
+                f"Table {collision_type} intersects the SMPL-X skin at frame "
+                f"{frame} ({len(collision_ids)} vertices; first={collision_ids[0]}; "
+                f"depth={maximum_depth:.4f} m; joints={collision_joints})"
             )
         if cup_intersects_skin(skin, cup_positions[frame]):
             raise RuntimeError(f"Cup intersects the SMPL-X skin at frame {frame}")
@@ -792,22 +844,42 @@ def build_static_scene(
                 np.abs(skin[:, 2] - cup_positions[frame, 2])
                 < cup_half_height
             )
-            palm_region = np.zeros(len(skin), dtype=bool)
-            palm_region[palm_patch_vertices] = True
-            palm_clearance = cup_delta_xy[palm_region & active_height].min()
-            if palm_clearance > palm_contact_threshold:
+            right_hand_clearance = hand_clearance(skin, cup_positions[frame])
+            if right_hand_clearance > contact_gap:
                 raise RuntimeError(
-                    f"Cup loses opposite-palm contact at frame {frame}: "
-                    f"clearance={palm_clearance:.4f} m"
+                    f"Cup loses right-hand contact at frame {frame}: "
+                    f"clearance={right_hand_clearance:.4f} m"
                 )
-            cup_direction = cup_positions[frame, :2] - skin[palm_vertex, :2]
-            cup_direction /= np.linalg.norm(cup_direction)
-            palm_alignment = float(cup_direction @ palm_directions[frame])
-            if palm_alignment < minimum_inner_palm_alignment:
-                raise RuntimeError(
-                    f"Cup is not on the inner-palm side at frame {frame}: "
-                    f"alignment={palm_alignment:.4f}"
+
+            if frame == grip_frame:
+                palm_region = np.zeros(len(skin), dtype=bool)
+                palm_region[palm_patch_vertices] = True
+                contact_regions = (
+                    palm_region,
+                    np.isin(dominant_joint, finger_joint_groups[0]),
+                    np.isin(dominant_joint, finger_joint_groups[4]),
                 )
+                contact_names = ("palm", "index", "thumb")
+                for name, region in zip(contact_names, contact_regions, strict=True):
+                    active_region = region & active_height
+                    clearance = (
+                        float(cup_delta_xy[active_region].min() - cup_radius)
+                        if np.any(active_region)
+                        else np.inf
+                    )
+                    if clearance > contact_gap:
+                        raise RuntimeError(
+                            f"Cup lacks {name} contact at grip frame {frame}: "
+                            f"clearance={clearance:.4f} m"
+                        )
+                cup_direction = cup_positions[frame, :2] - skin[palm_vertex, :2]
+                cup_direction /= np.linalg.norm(cup_direction)
+                palm_alignment = float(cup_direction @ palm_directions[frame])
+                if palm_alignment < minimum_inner_palm_alignment:
+                    raise RuntimeError(
+                        f"Cup is not on the inner-palm side at grip frame {frame}: "
+                        f"alignment={palm_alignment:.4f}"
+                    )
 
         if contact_start_frame < frame < grip_frame:
             clearance = hand_clearance(skin, cup_positions[frame])
@@ -1360,7 +1432,7 @@ def main() -> int:
             args.contact_frame,
             args.pickup_frame,
             args.grip_transition_frames,
-            args.animate_cup_pickup,
+            not args.keep_cup_static,
         )
 
     print(f"Result: {result_path}")
@@ -1369,25 +1441,34 @@ def main() -> int:
         f"Skin: {len(vertices)} vertices, {len(faces)} faces, {len(bind_positions)} bones"
     )
     if scene.cup_is_static:
+        bottom_clearance_mm = 1000.0 * (
+            scene.cup_center[2] - 0.5 * scene.cup_height - scene.table_top_z
+        )
         print(
             "Scene: contact frame={} | cup remains stationary on table | "
-            "table top z={:.3f} m | cup bottom clearance=2 mm | "
+            "table top z={:.3f} m | cup bottom clearance={:.1f} mm | "
             "index/middle z=({:.3f}, {:.3f}) m".format(
                 scene.contact_frame,
                 scene.table_top_z,
+                bottom_clearance_mm,
                 scene.index_contact[2],
                 scene.middle_contact[2],
             )
         )
     else:
+        bottom_clearance_mm = 1000.0 * (
+            scene.cup_center[2] - 0.5 * scene.cup_height - scene.table_top_z
+        )
         print(
-            "Scene: contact frame={} | pickup after frame={} | inner-palm contact "
-            "from frame={} | table top z={:.3f} m | cup bottom clearance=2 mm | "
+            "Scene: contact frame={} | pickup after frame={} | palm/index/thumb "
+            "contact at frame={} | table top z={:.3f} m | cup bottom "
+            "clearance={:.1f} mm | "
             "index/middle z=({:.3f}, {:.3f}) m".format(
                 scene.contact_frame,
                 scene.pickup_frame,
                 scene.grip_frame,
                 scene.table_top_z,
+                bottom_clearance_mm,
                 scene.index_contact[2],
                 scene.middle_contact[2],
             )
