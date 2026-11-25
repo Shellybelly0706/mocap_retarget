@@ -230,7 +230,7 @@ __marimo__/
 mocap_data/data/
 moshpp_outputs/
 pupil_labs/
-neon_realtime/neon_data/
+neon/data/
 
 # IDE settings
 .vscode/

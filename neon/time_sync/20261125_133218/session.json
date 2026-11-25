@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "purpose": "Neon Companion to Ubuntu clock-offset monitoring",
+  "started_at_utc": "2026-11-25T12:32:18.045038+00:00",
+  "output_files": {
+    "clock_offsets": "clock_offsets.jsonl"
+  },
+  "clock_domains": {
+    "client": "Ubuntu Unix/UTC system clock",
+    "host": "Neon Companion Unix/UTC system clock",
+    "offset_definition": "Ubuntu time - Neon Companion time"
+  },
+  "conversion": {
+    "neon_to_ubuntu": "ubuntu_ns = neon_ns + offset_ms * 1000000",
+    "ubuntu_to_neon": "neon_ns = ubuntu_ns - offset_ms * 1000000"
+  },
+  "configuration": {
+    "requested_ip": "172.20.10.2",
+    "port": 8080,
+    "discovery_timeout_seconds": 10.0,
+    "interval_seconds": 5.0,
+    "measurements_per_estimate": 100,
+    "sleep_between_measurements_seconds": null,
+    "best_fraction": 0.25,
+    "stability_threshold_ms": 1.0,
+    "max_roundtrip_ms": 5.0,
+    "duration_seconds": null
+  },
+  "important_note": "This program estimates a mapping between clocks. It does not change either device's system clock and cannot guarantee <1 ms absolute error.",
+  "device": {
+    "phone_name": "Neon Companion 01",
+    "phone_ip": "172.20.10.2",
+    "phone_id": "55f8e5302136452e",
+    "module_serial": "370641",
+    "serial_number_glasses": "-1",
+    "version_glasses": "2.0"
+  },
+  "stopped_at_utc": "2026-11-25T12:41:10.694761+00:00",
+  "result": {
+    "successful_estimates": 107,
+    "failed_estimates": 0,
+    "first_recommended_offset_ms": -4.0,
+    "last_recommended_offset_ms": -3.0,
+    "minimum_recommended_offset_ms": -4.0,
+    "maximum_recommended_offset_ms": -3.0,
+    "offset_change_first_to_last_ms": 1.0
+  }
+}

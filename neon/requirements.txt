@@ -1,3 +1,2 @@
 pupil-labs-realtime-api>=1.6
-opencv-python>=4.8
 
