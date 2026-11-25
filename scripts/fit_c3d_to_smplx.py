@@ -12,7 +12,6 @@ from moshpp.mosh_head import MoSh, run_moshpp_once
 
 ROOT = Path("/media/fiona/LinuxData/mocap_retarget")
 MODEL_DIR = ROOT / "mocap_data/data/smplx"
-HEAD_MARKERS = ("HeadTop", "HeadFront", "HeadSide")
 
 SEQUENCES = {
     "upper": {
@@ -23,6 +22,7 @@ SEQUENCES = {
         "least_avail_markers": 1.0,
         "optimize_fingers": False,
         "output_suffix": "",
+        "output_tag": "layout_fixed_v2",
     },
     "righthand": {
         "c3d": ROOT
@@ -36,6 +36,7 @@ SEQUENCES = {
         "least_avail_markers": 0.95,
         "optimize_fingers": True,
         "output_suffix": "_fingers",
+        "output_tag": "layout_fixed_v2",
     },
     "righthand-added": {
         "c3d": ROOT
@@ -46,10 +47,7 @@ SEQUENCES = {
         "least_avail_markers": 1.0,
         "optimize_fingers": True,
         "output_suffix": "_fingers",
-        # This take begins with a measured upright, stationary calibration
-        # pose. Put it first, then retain diverse frames for shape/marker fit.
-        "head_calibration_frame": 0,
-        "stagei_frame_ids": (0, 1052, 1783, 75, 27, 856, 110, 908, 241, 173, 31, 1158),
+        "output_tag": "layout_fixed_v2",
     },
 }
 
@@ -87,18 +85,9 @@ def build_overrides(mode, sequence):
     c3d = sequence_cfg["c3d"]
     marker_layout = sequence_cfg["marker_layout"]
     markers = load_layout_markers(marker_layout)
-    head_calibration_frame = sequence_cfg.get("head_calibration_frame")
-    stagei_frame_ids = sequence_cfg.get("stagei_frame_ids")
-    if head_calibration_frame is None:
-        output_name = "{}{}_{}".format(
-            c3d.stem, sequence_cfg["output_suffix"], mode
-        )
-    else:
-        if not stagei_frame_ids or head_calibration_frame not in stagei_frame_ids:
-            raise ValueError("The head calibration frame must be selected for Stage I")
-        output_name = "{}{}_head_calibrated_{}".format(
-            c3d.stem, sequence_cfg["output_suffix"], mode
-        )
+    output_name = "{}{}_{}_{}".format(
+        c3d.stem, sequence_cfg["output_suffix"], sequence_cfg["output_tag"], mode
+    )
 
     overrides = {
         "mocap.fname": str(c3d),
@@ -142,24 +131,6 @@ def build_overrides(mode, sequence):
         "dirs.marker_layout.fname": str(marker_layout),
         "runtime.stagei_only": False,
     }
-
-    if head_calibration_frame is not None:
-        stagei_frame_names = [f"{c3d}_{frame_id}" for frame_id in stagei_frame_ids]
-        # Keep the three marker locations optimizable. Only the known-upright
-        # calibration frame anchors the SMPL-X neck/head rotations, resolving
-        # the constant-rotation ambiguity without freezing marker placement.
-        overrides.update(
-            {
-                "moshpp.head_marker_labels": list(HEAD_MARKERS),
-                "moshpp.head_marker_max_offset": None,
-                "moshpp.head_pose_anchor_frame_indices": [
-                    stagei_frame_ids.index(head_calibration_frame)
-                ],
-                "moshpp.stagei_frame_picker.type": "manual",
-                "moshpp.stagei_frame_picker.num_frames": len(stagei_frame_names),
-                "moshpp.stagei_frame_picker.stagei_mocap_fnames": stagei_frame_names,
-            }
-        )
 
     return overrides
 

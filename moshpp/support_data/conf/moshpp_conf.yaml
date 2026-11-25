@@ -33,12 +33,6 @@ surface_model:
 
 moshpp:
   head_marker_corr_fname: ${dirs.support_base_dir}/ssm_head_marker_corr.npz
-  # These marker locations remain optimizable in Stage I. A known-neutral
-  # calibration frame can anchor the neck/head pose and remove the otherwise
-  # ambiguous trade-off between head rotation and marker placement.
-  head_marker_labels: []
-  head_marker_max_offset:
-  head_pose_anchor_frame_indices: []
   pose_body_prior_fname: ${dirs.support_base_dir}/${surface_model.type}/pose_body_prior.pkl
   pose_hand_prior_fname: ${dirs.support_base_dir}/${surface_model.type}/pose_hand_prior.npz
 
@@ -140,8 +134,6 @@ opt_weights:
     stagei_wt_init_finger: 400.0
     stagei_wt_betas: 10.
     stagei_wt_init: 300
-    stagei_wt_init_head: 300.0
-    stagei_wt_head_pose_anchor: 1000.0
     stagei_wt_data: 75.
     stagei_wt_surf: 10000.
     stagei_wt_annealing: [ 1., .5, .25, .125 ]

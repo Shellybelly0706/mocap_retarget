@@ -177,29 +177,6 @@ def mosh_stagei(stagei_frames: List[Dict[str, np.ndarray]], cfg: DictConfig,
     markers_latent, distance_to_surface_obj = prepare_mosh_markers_latent(can_model=can_model, marker_meta=marker_meta)
     latent_labels = list(marker_meta['marker_vids'].keys())
 
-    constrained_head_labels = list(cfg.moshpp.get('head_marker_labels', []) or [])
-    missing_head_labels = sorted(set(constrained_head_labels).difference(latent_labels))
-    if missing_head_labels:
-        raise ValueError(
-            f'Configured head markers are absent from the marker layout: {missing_head_labels}')
-    constrained_head_ids = [latent_labels.index(label) for label in constrained_head_labels]
-    if constrained_head_ids:
-        logger.info(
-            'Applying the Stage-I head-marker location prior to: '
-            + ', '.join(constrained_head_labels))
-
-    head_pose_anchor_frame_indices = list(
-        cfg.moshpp.get('head_pose_anchor_frame_indices', []) or [])
-    invalid_anchor_frames = [
-        index for index in head_pose_anchor_frame_indices
-        if index < 0 or index >= len(opt_models)]
-    if invalid_anchor_frames:
-        raise ValueError(
-            'Head-pose anchor frame indices are outside the selected Stage-I '
-            f'frame range: {invalid_anchor_frames}')
-    if head_pose_anchor_frame_indices and cfg.surface_model.type != 'smplx':
-        raise ValueError('The head-pose anchor currently supports SMPL-X only')
-
     logger.debug(f'Estimating for #latent markers: {len(markers_latent)}')
 
     tc = TransformedCoeffs(can_body=can_model, markers_latent=markers_latent)
@@ -381,42 +358,19 @@ def mosh_stagei(stagei_frames: List[Dict[str, np.ndarray]], cfg: DictConfig,
                     [model.priors['pose_jangles'](model.pose[pose_body_ids]) for model in opt_models]) * wt_poseB * 2.
 
         init_loss = (markers_latent - init_markers_latent)
-        constrained_head_id_set = set(constrained_head_ids)
         # opt_objs['init'] = wt_init * init_loss
         if head_mrk_corr is not None:
             opt_objs.update(
                 {f'init_{k}': init_loss[list(
-                    set(np.arange(len(latent_labels))[marker_type_mask]).difference(
-                        set(head_mrk_ids).union(constrained_head_id_set)))] * wt_init[k] for
+                    set(np.arange(len(latent_labels))[marker_type_mask]).difference(head_mrk_ids))] * wt_init[k] for
                  k, marker_type_mask in
                  marker_meta['marker_type_mask'].items() if k != 'head'})
             opt_objs['init_head_corr'] = head_mrk_corr.dot(init_loss[head_mrk_ids]) * wt_init.get('body',
                                                                                                   stagei_wts.stagei_wt_init * wt_anneal_factor)
 
         else:
-            for marker_type, marker_type_mask in marker_meta['marker_type_mask'].items():
-                marker_ids = set(np.arange(len(latent_labels))[marker_type_mask])
-                marker_ids = sorted(marker_ids.difference(constrained_head_id_set))
-                if marker_ids:
-                    opt_objs[f'init_{marker_type}'] = (
-                        init_loss[marker_ids] * wt_init[marker_type])
-
-        if constrained_head_ids:
-            head_init_weight = (
-                stagei_wts.stagei_wt_init_head * wt_anneal_factor)
-            opt_objs['init_head_anatomical'] = (
-                init_loss[constrained_head_ids] * head_init_weight)
-
-        if head_pose_anchor_frame_indices:
-            # SMPL-X full-pose indices: neck=36:39 and head=45:48. The
-            # calibration frame is known to be upright, so this anchor fixes
-            # the constant-rotation gauge while the marker locations remain
-            # free to adapt to the physical marker placement.
-            head_pose_anchor_ids = [36, 37, 38, 45, 46, 47]
-            opt_objs['head_pose_anchor'] = ch.concatenate(
-                [opt_models[index].pose[head_pose_anchor_ids]
-                 for index in head_pose_anchor_frame_indices]
-            ) * stagei_wts.stagei_wt_head_pose_anchor
+            opt_objs.update({f'init_{k}': init_loss[marker_type_mask] * wt_init[k] for k, marker_type_mask in
+                             marker_meta['marker_type_mask'].items()})
 
         if optimize_betas: opt_objs['beta'] = can_model.priors['betas'].ravel() * wt_beta
         opt_objs['surf'] = distance_to_surface_obj * stagei_wts.stagei_wt_surf
@@ -465,26 +419,6 @@ def mosh_stagei(stagei_frames: List[Dict[str, np.ndarray]], cfg: DictConfig,
     # Saving all values from the optimization process, (sum of least squares)
     stagei_errs = {k: np.sum(obj_val.r ** 2) for k, obj_val in opt_objs.items()}
 
-    head_marker_offsets = {}
-    if constrained_head_ids:
-        offsets = np.linalg.norm(
-            markers_latent.r[constrained_head_ids]
-            - init_markers_latent.r[constrained_head_ids],
-            axis=1)
-        head_marker_offsets = dict(zip(constrained_head_labels, offsets.tolist()))
-        logger.info(
-            'Final Stage-I constrained head-marker offsets: '
-            + ', '.join(
-                [f'{label}={1000.0 * offset:.2f} mm'
-                 for label, offset in head_marker_offsets.items()]))
-        max_allowed_offset = cfg.moshpp.get('head_marker_max_offset')
-        if (max_allowed_offset is not None
-                and np.max(offsets) > float(max_allowed_offset)):
-            raise RuntimeError(
-                'Stage-I head-marker constraint failed: maximum displacement '
-                f'{1000.0 * np.max(offsets):.2f} mm exceeds '
-                f'{1000.0 * float(max_allowed_offset):.2f} mm')
-
     sknbrs = NearestNeighbors(algorithm='kd_tree', n_neighbors=1).fit(can_model.r)
     _, closest = sknbrs.kneighbors(markers_latent.r)
     markers_latent_vids = {el[0]: el[1][0] for el in zip(latent_labels, closest.tolist())}
@@ -499,7 +433,6 @@ def mosh_stagei(stagei_frames: List[Dict[str, np.ndarray]], cfg: DictConfig,
     stagei_debug_details = {'opt_models_trans': [model.trans.r for model in opt_models],
                             'opt_models_pose': [model.pose.r for model in opt_models],
                             'stagei_errs': stagei_errs,
-                            'head_marker_offsets': head_marker_offsets,
                             'markers_latent_all_vids': markers_latent_all_vids,
                             'stagei_markers_sim_all': [m.r for m in markers_sim_all],
                             'stagei_markers_sim': [m.r for m in markers_sim],
