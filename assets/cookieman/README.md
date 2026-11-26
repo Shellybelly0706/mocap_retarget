@@ -1,15 +1,22 @@
 # Cookieman upper-body asset
 
 `upper_body_skin.npz` and `avatar_texture.png` are generated from
-`../Cookieman.vrm` for `src/utils/1029_comic_avatar_test/visualize_upper_body.py`.
+`../Cookieman.vrm` for the reusable avatar helpers in `src/utils/avatars/`.
 
 Regenerate the derived files from the project root:
 
 ```bash
-conda run --no-capture-output -n mocap_data \
-  python src/utils/1029_comic_avatar_test/convert_vrm_avatar.py \
-  assets/Cookieman.vrm assets/cookieman/upper_body_skin.npz \
-  --upper-body
+conda activate mocap_data
+PYTHONPATH=src python - <<'PYTHON'
+from pathlib import Path
+from utils.avatars.vrm import convert
+
+convert(
+    Path("assets/Cookieman.vrm"),
+    Path("assets/cookieman/upper_body_skin.npz"),
+    upper_body=True,
+)
+PYTHON
 ```
 
 The extracted PNG is Cookieman's original texture. Leg-weighted triangles are

@@ -1330,7 +1330,7 @@ class Reader(Manager):
                 # - While words are 16 bit, residual and camera mask is always interpreted as 8 packed in a single word!
                 # - 16 or 32 bit may represent a sign (indication that certain files write a -1 floating point only)
                 last_word = points[:, 3].astype(np.int32)
-                valid = (last_word & 0x80008000) == 0
+                valid = (last_word.view(np.uint32) & np.uint32(0x80008000)) == 0
                 points[~valid, 3:5] = -1.0
                 c = last_word[valid]
 

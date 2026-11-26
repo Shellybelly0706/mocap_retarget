@@ -1,7 +1,7 @@
 # Baldman upper-body asset
 
 `upper_body_skin.npz` and `avatar_texture.png` are generated from
-`../Baldman.vrm` for `src/utils/1029_comic_avatar_test/visualize_upper_body.py`.
+`../Baldman.vrm` for the reusable avatar helpers in `src/utils/avatars/`.
 
 The source avatar is **Baldman** from the Open Source Avatars 100Avatars R1
 collection. That collection is published under CC0.
@@ -15,10 +15,17 @@ collection. That collection is published under CC0.
 Regenerate the derived files from the project root:
 
 ```bash
-conda run --no-capture-output -n mocap_data \
-  python src/utils/1029_comic_avatar_test/convert_vrm_avatar.py \
-  assets/Baldman.vrm assets/baldman/upper_body_skin.npz \
-  --upper-body
+conda activate mocap_data
+PYTHONPATH=src python - <<'PYTHON'
+from pathlib import Path
+from utils.avatars.vrm import convert
+
+convert(
+    Path("assets/Baldman.vrm"),
+    Path("assets/baldman/upper_body_skin.npz"),
+    upper_body=True,
+)
+PYTHON
 ```
 
 The extracted PNG is Baldman's original texture. Leg-weighted triangles are

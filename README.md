@@ -1,36 +1,73 @@
-# Motion-capture retargeting with MoSh++ and SMPL-X
+# Egocentric data collection with OptiTrack and Pupil Labs
 
-This repository contains an end-to-end workflow for fitting labeled OptiTrack
-motion capture to a neutral SMPL-X body, inspecting the fit, and playing the
-result in MuJoCo. It also includes utilities for Motive CSV/C3D inspection,
-marker-layout authoring, and experimental avatar visualization.
+We are building an **egocentric data collection pipeline** that pairs
+**upper-body tracking from OptiTrack** with **front-facing scene-camera video
+from Pupil Labs Neon**. The goal is to collect and process recordings that
+connect what a participant sees with how their upper body moves over time.
 
-The current fitting pipeline is configured for the `Zekun_upper` captures in
-`data/1112`. Those captures are local data and are not committed to
-Git.
+| Source | Data | Role in the pipeline |
+| --- | --- | --- |
+| OptiTrack / Motive | Upper-body marker and skeleton tracking, exported as CSV or C3D | Describe the participant's upper-body motion |
+| Pupil Labs Neon | Front-facing scene/world-camera video and frame timestamps | Record the participant's egocentric view |
+| Clock measurements and synchronization events | Time Echo logs, measured clock offsets, and event anchors where available | Establish the temporal relationship between motion samples and video frames |
 
-## Workflow
+The intended result is a paired session with motion and video on a documented
+time basis, while retaining the original recordings, timestamps, frame IDs,
+units, and coordinate conventions. SMPL-X fitting, MuJoCo visualization, and
+avatar retargeting support motion reconstruction and quality inspection within
+this larger collection pipeline.
 
-1. Inspect a C3D capture and create or validate its marker-to-SMPL-X layout.
-2. Run MoSh++ Stage I (body shape) and Stage II (per-frame pose).
-3. Export an AMASS-style SMPL-X NPZ at 30 Hz.
-4. Render a marker/mesh preview or play the skinned result in MuJoCo.
+## Collection and processing workflow
 
-The source C3D files are recorded at 120 Hz in a Z-up coordinate system. The
-fitting script rotates them to SMPL-X's Y-up coordinates and downsamples them
-by four to 30 Hz.
+1. Record upper-body motion in Motive and scene-camera video with Pupil Labs
+   Neon during the same session. Run the Neon clock-offset monitor alongside
+   recording.
+2. Import the Motive CSV/C3D exports, Neon video, video-frame timestamps, and
+   available clock measurements under the root `data/` directory.
+3. Inspect tracking coverage, marker labels, video timing, units, and coordinate
+   conventions before further processing.
+4. Align the motion and video timelines using clock measurements and, where
+   needed, common recorded events or motion-based alignment.
+5. Inspect a synchronized motion/video preview and retain the alignment method,
+   measured offsets, and remaining timing uncertainty with the session.
+6. Optionally fit the markers to SMPL-X and produce derived motion or avatar
+   visualizations for further inspection.
+
+## Current implementation
+
+The repository provides reusable capture loaders, an OptiTrack visualization
+entry point, a Neon clock-offset monitor, offline synchronization and paired
+video-preview utilities, and optional MoSh++/SMPL-X fitting tools. These are
+building blocks for the collection pipeline; a unified collection and session
+export workflow is still being developed.
+
+Neon recording is performed through the Companion App / Neon Monitor and
+exported afterward. The code in `src/neon/` monitors clock offsets; it does not
+receive or record the scene-camera video itself.
+
+The existing fitting profiles target the `Zekun_upper` captures in `data/1112`.
+Those source C3D captures use 120 Hz and Z-up coordinates. The fitting workflow
+rotates them to SMPL-X's Y-up coordinates and samples every fourth frame for
+30 Hz output. These are profile-specific settings, not requirements for every
+future collection session. Capture data and licensed model assets are local
+and are not committed to Git.
 
 ## Repository layout
 
 ```text
 .
 ├── assets/                       # avatars, textures, and derived skins
-├── data/                         # local captures and SMPL-X assets (ignored)
+├── data/                         # imported sessions and model assets (ignored)
+├── AGENTS.md                     # project purpose and agent working guidance
 ├── environment.yml               # Python 3.12 data/viewer environment
 ├── ENVIRONMENT.md                # data tooling notes
 ├── src/
-│   ├── utils/                    # fitting, rendering, data tools, and sync
-│   │   └── 1029_comic_avatar_test/ # experimental avatar tools
+│   ├── utils/                    # reusable pipeline helpers
+│   │   ├── optitrack/            # capture IO, skeletons, scenes, and playback
+│   │   ├── markers/              # conversion, quality analysis, and layouts
+│   │   ├── smplx/                # fitting, kinematics, and rendering
+│   │   ├── synchronization/      # clocks, alignment, and video helpers
+│   │   └── avatars/              # asset decoding, retargeting, and scenes
 │   ├── neon/                     # Pupil Labs Neon clock-offset monitor
 │   ├── moshpp/                   # bundled, locally adapted MoSh++ source
 │   └── mesh/                     # bundled psbody.mesh source
@@ -89,103 +126,73 @@ Scripts resolve asset, capture, and output paths relative to the repository
 root. Install bundled libraries from `src/mesh` and `src/moshpp`; existing
 editable installations need to be reinstalled after this move.
 
-## Fit C3D to SMPL-X
+## Synchronize motion with egocentric video
 
-Run all commands from the repository root. First validate the selected inputs
-and resolved MoSh++ configuration without starting optimization:
+Synchronization is provided through reusable functions in
+[`src/utils/synchronization/`](src/utils/synchronization/):
 
-```bash
-conda activate moshpp
-python src/utils/fit_c3d_to_smplx.py \
-  --sequence upper \
-  --mode smoke \
-  --check-only
-```
+- `clocks` reads Time Echo anchors and converts between Neon and Ubuntu clocks.
+- `motive` and `motive_motion` load exported tracking data and its timing.
+- `neon_video` loads the exported scene video and frame timestamps.
+- `alignment` fits temporal mappings from shared events or motion signals.
+- `video_rendering` produces paired motion/video previews from prepared inputs.
 
-Then run a short smoke fit or the complete sequence:
+Use these helpers from Python with `src/` on the import path (`PYTHONPATH=src`).
+The unified collection and synchronization entry point remains to be built.
+Use exported scene-camera frame timestamps when available and preserve the
+original timestamps alongside derived alignment results.
 
-```bash
-# First 120 source frames, sampled to 30 fitted frames
-python src/utils/fit_c3d_to_smplx.py --sequence upper --mode smoke
+Time Echo measures the offset between the Ubuntu computer and Neon Companion.
+It does not measure the clock offset of the Windows computer running Motive.
+Global-timestamp alignment therefore also needs a known relationship between
+the Motive and Ubuntu clocks, or an explicitly documented assumption. The
+current tools do not guarantee sub-millisecond synchronization.
 
-# Entire capture at 30 Hz
-python src/utils/fit_c3d_to_smplx.py --sequence upper --mode full
-```
+## Optional SMPL-X processing
 
-Available profiles are:
+Reusable helpers under [`src/utils/smplx/`](src/utils/smplx/) support derived
+human-body motion and quality inspection:
 
-| Profile | Capture | Markers | Finger optimization |
-| --- | --- | ---: | --- |
-| `upper` | `Zekun_upper_1.c3d` | 25 | No |
-| `righthand` | `Zekun_upper_righthand_1.c3d` | 32 unique labels | Yes |
-| `righthand-added` | `Zekun_upper_righthand_added_1.c3d` | 32 | Yes |
+- `fitting.build_overrides(mode, sequence)` builds MoSh++ configuration for the
+  existing `upper`, `righthand`, and `righthand-added` capture profiles.
+- `reconstruction.reconstruct_vertices(...)` reconstructs meshes from fitted
+  SMPL-X parameters.
+- `kinematics` computes poses, joint transforms, and skinned vertices.
+- `scene`, `mujoco_model`, and `playback` construct and display a MuJoCo scene.
+- `rendering` draws mesh/marker previews, and `head_markers` provides diagnostics.
 
-For example, fit the capture with the added right-hand markers:
-
-```bash
-python src/utils/fit_c3d_to_smplx.py \
-  --sequence righthand-added \
-  --mode full
-```
-
-Each run writes Stage-I and Stage-II artifacts under a directory such as:
-
-```text
-moshpp_outputs/Zekun_upper_righthand_added_1_fingers_full/1112/c3d/
-└── Skeleton_Zixuan/
-    ├── neutral_stagei.npz
-    ├── Zekun_upper_righthand_added_1_stageii.pkl
-    └── Zekun_upper_righthand_added_1_stageii.npz
-```
-
-The Stage-II NPZ contains the SMPL-X translation, root/body/hand pose, shape,
-observed markers, fitted markers, and corrected 30 Hz timing metadata.
-
-## Inspect the result
-
-### Render an MP4 without OpenGL
-
-The renderer reconstructs the SMPL-X mesh and draws front and side views with
-observed markers in red and fitted markers in green:
-
-```bash
-conda activate moshpp
-python src/utils/render_moshpp_result.py \
-  --result moshpp_outputs/Zekun_upper_1_full/1112/c3d/Skeleton_Zixuan/Zekun_upper_1_stageii.npz \
-  --output /tmp/Zekun_upper_1_preview.mp4
-```
-
-Use `--stride 4` for faster rendering or `--max-frames 120` for a short
-preview. If `--output` is omitted, the video is written next to the input NPZ.
-
-### Play the skinned body in MuJoCo
-
-Validate the model and result without opening a GUI:
-
-```bash
-conda activate mocap_data
-python src/utils/visualize_smplx_mujoco.py \
-  --result moshpp_outputs/Zekun_upper_righthand_added_1_fingers_full/1112/c3d/Skeleton_Zixuan/Zekun_upper_righthand_added_1_stageii.npz \
-  --validate-only
-```
-
-Remove `--validate-only` to launch the interactive viewer. The visualization
-converts SMPL-X Y-up coordinates to MuJoCo Z-up, renders the 55-joint skinned
-body, and places the fitted motion in a table-and-cup scene. Add
-`--animate-cup-pickup` to enable the experimental kinematic pickup animation.
+Fitting and reconstruction require the local licensed model assets and the
+appropriate environment described above. Import these helpers directly when
+building a workflow; the former fitting, rendering, and viewer CLI wrappers
+have been removed.
 
 ## Supporting tools
 
-Common utilities under `src/utils` include:
+Visualize an OptiTrack C3D or Motive CSV capture with the entry point in
+`tests/`:
 
-- `visualize_c3d_markers.py`: inspect C3D markers and skeleton data;
-- `convert_motive_csv_to_mosh_npz.py`: convert a Motive CSV to marker NPZ;
-- `inspect_mosh_marker_npz.py`: report marker quality and create previews;
-- `edit_smplx_marker_layout.py`: assign capture labels to SMPL-X vertices;
-- `compare_1105_exports.py`: inspect the six November 5 Motive exports.
+```bash
+conda activate mocap_data
+python tests/visualize_optitrack.py data/1112/c3d/Zekun_upper_1.c3d
+python tests/visualize_optitrack.py data/1105/csv/take.csv --check-only
+```
 
-Every script supports `--help`; inspection tools also provide a non-GUI
-`--check-only` or `--validate-only` mode where applicable.
+The file extension selects the existing viewer in `src/utils/`. Use
+`--speed 0.5` for half-speed playback, `--no-loop` to stop at the final frame,
+or `--check-only` to validate the capture without opening a window.
+
+Other processing is available through reusable helper packages:
+
+- `utils.markers`: CSV-to-NPZ conversion, quality analysis, frame selection,
+  marker-layout editing, and previews.
+- `utils.smplx`: fitting configuration, kinematics, reconstruction, and rendering.
+- `utils.synchronization`: clock conversion, motion/video alignment, and previews.
+- `utils.avatars`: avatar decoding, conversion, and retargeting.
+
+See [`src/utils/README.md`](src/utils/README.md) for the module map and Python
+examples. Runnable workflow entry points belong in `tests/`; the current
+OptiTrack entry point imports the helper API directly. Run regression checks
+with `python -m unittest discover -s tests/unit -v` in the data/viewer environment.
 
 ## Monitor Pupil Labs Neon clock offsets
 

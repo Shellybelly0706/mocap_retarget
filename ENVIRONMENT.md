@@ -18,18 +18,18 @@ The environment supports:
 
 ## View the 1105 CSV takes in MuJoCo
 
-List the six CSV takes, then open exactly one by its 1-based number:
+Open a CSV take by its path using the OptiTrack visualization entry point:
 
 ```bash
 conda run --no-capture-output -n mocap_data \
-  python src/utils/compare_1105_exports.py --list
+  python tests/visualize_optitrack.py data/1105/csv/take.csv
 conda run --no-capture-output -n mocap_data \
-  python src/utils/compare_1105_exports.py 1
+  python tests/visualize_optitrack.py data/1105/csv/take.csv --check-only
 ```
 
-The viewer displays CSV points and rigid bodies without skeleton links. Use
-`--check-only` to print and validate a take without opening a window. During
-playback, Space pauses, R restarts, keys 1 through 5 toggle the CSV object
+Replace `take.csv` with the imported capture's filename. The same entry point
+accepts C3D files. Use `--check-only` to validate a take without opening a window.
+During CSV playback, Space pauses, R restarts, keys 1 through 6 toggle object
 categories, and the left/right arrow keys step one frame while paused.
 
 ## TAK to CSV limitation
