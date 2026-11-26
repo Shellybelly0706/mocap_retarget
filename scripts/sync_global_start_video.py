@@ -3,7 +3,8 @@
 
 No motion feature or manually selected event is used.  The time domains are:
 
-* Neon Companion -> Ubuntu: interpolated from Pupil Labs Time Echo records.
+* Neon Companion -> Ubuntu: optionally interpolated from Pupil Labs Time Echo
+  records.  Without ``--offset-log``, Companion timestamps are used directly.
 * Motive/Windows -> Ubuntu: Motive ``Capture Start Time`` interpreted in the
   requested timezone, plus an optional measured ``Ubuntu - Windows`` offset.
 
@@ -14,6 +15,10 @@ Windows clock running Motive.  Therefore the default ``--motive-ubuntu-offset-ms
 0`` assumes the Windows wall clock and Ubuntu wall clock were already
 synchronized.  If they were not, global-start-only alignment inherits that
 unknown error.  Use ``--motive-ubuntu-offset-ms`` when that offset is known.
+
+Time Echo correction is optional because Neon timestamps are already Unix
+timestamps and the clock difference can be negligible for some workflows.
+Omitting it explicitly assumes ``Ubuntu time == Neon Companion time``.
 
 The generated MP4 contains no audio.  Its left panel is the Neon scene video,
 the right panel is an isometric Motive skeleton visualization, and every frame
@@ -1136,8 +1141,8 @@ def render_video(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "仅根据 Neon/Motive global 开始时间和 Time Echo，生成带 Ubuntu "
-            "时间的同步分屏 MP4"
+            "仅根据 Neon/Motive global 开始时间生成同步分屏 MP4；可选用 "
+            "Time Echo 校正 Ubuntu 与 Neon Companion 的时钟误差"
         ),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
@@ -1146,8 +1151,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--offset-log",
         type=Path,
-        required=True,
-        help="clock_offset_monitor.py 生成的 clock_offsets.jsonl",
+        help=(
+            "可选：clock_offset_monitor.py 生成的 clock_offsets.jsonl；"
+            "提供时校正 Ubuntu - Neon Companion 时钟误差，省略时假定两者相同"
+        ),
     )
     parser.add_argument(
         "--neon-video",
@@ -1263,24 +1270,40 @@ def run(args: argparse.Namespace) -> int:
         )
     input_paths = {
         args.motive_csv.resolve(),
-        args.offset_log.resolve(),
         (args.neon_recording_dir / "info.json").resolve(),
     }
+    if args.offset_log is not None:
+        input_paths.add(args.offset_log.resolve())
     for optional in (args.neon_video, args.neon_video_time):
         if optional is not None:
             input_paths.add(optional.resolve())
     if output_path in input_paths or report_path in input_paths:
         raise ValueError("输出路径不能覆盖输入文件")
 
-    clock_anchors = read_clock_anchors(
-        args.offset_log, args.include_unstable
-    )
-    companion_to_ubuntu = make_clock_converter(
-        clock_anchors,
-        source_attr="companion_ns",
-        target_attr="ubuntu_ns",
-        allow_extrapolation=args.allow_offset_extrapolation,
-    )
+    if args.offset_log is not None:
+        clock_anchors = read_clock_anchors(
+            args.offset_log, args.include_unstable
+        )
+        companion_to_ubuntu = make_clock_converter(
+            clock_anchors,
+            source_attr="companion_ns",
+            target_attr="ubuntu_ns",
+            allow_extrapolation=args.allow_offset_extrapolation,
+        )
+        neon_clock_mode = "time_echo_correction"
+    else:
+        if args.include_unstable or args.allow_offset_extrapolation:
+            raise ValueError(
+                "--include-unstable 和 --allow-offset-extrapolation 只有在提供 "
+                "--offset-log 时才有意义"
+            )
+        clock_anchors = []
+        companion_to_ubuntu = int
+        neon_clock_mode = "assume_companion_equals_ubuntu"
+        print(
+            "提示：未提供 --offset-log；不校正 Neon Companion 与 Ubuntu "
+            "的时钟误差。"
+        )
     motive = load_motive_motion(
         args.motive_csv,
         args.motive_timezone,
@@ -1319,7 +1342,9 @@ def run(args: argparse.Namespace) -> int:
             "neon_video_time": (
                 str(neon.time_path.resolve()) if neon.time_path else None
             ),
-            "time_echo_log": str(args.offset_log.resolve()),
+            "time_echo_log": (
+                str(args.offset_log.resolve()) if args.offset_log else None
+            ),
         },
         "motive": {
             "take_name": motive.take_name,
@@ -1346,6 +1371,8 @@ def run(args: argparse.Namespace) -> int:
             "video_fps": neon.fps,
         },
         "time_echo": {
+            "enabled": args.offset_log is not None,
+            "clock_conversion_mode": neon_clock_mode,
             "used_anchor_count": len(clock_anchors),
             "include_unstable": bool(args.include_unstable),
             "allow_offset_extrapolation": bool(
@@ -1359,6 +1386,9 @@ def run(args: argparse.Namespace) -> int:
             (
                 "Time Echo corrects Neon Companion only; it does not measure "
                 "the Motive Windows clock."
+                if args.offset_log is not None
+                else "No Time Echo correction was applied; Neon Companion "
+                "timestamps were assumed equal to Ubuntu timestamps."
             ),
             (
                 "Motive accuracy therefore depends on the declared timezone "
@@ -1373,6 +1403,12 @@ def run(args: argparse.Namespace) -> int:
     )
     print(f"完成：{output_path}")
     print(f"同步报告：{report_path}")
+    if args.offset_log is None:
+        print("Neon 时钟：未校正（假定 Companion == Ubuntu）。")
+    else:
+        print(
+            f"Neon 时钟：已使用 Time Echo 校正（{len(clock_anchors)} 个锚点）。"
+        )
     print(
         "注意：本方法没有测量 Motive Windows→Ubuntu 的时钟误差；"
         f"当前使用 {args.motive_ubuntu_offset_ms:+.3f} ms。"

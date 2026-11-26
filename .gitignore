@@ -232,6 +232,7 @@ moshpp_outputs/
 pupil_labs/
 neon/data/
 sync/
+mix_data/
 
 # IDE settings
 .vscode/
