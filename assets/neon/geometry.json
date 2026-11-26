@@ -1,0 +1,69 @@
+{
+  "source_file": "Neon_reference.STEP",
+  "source_sha256": "b7d56357b94bee990ac9e3050119f395a2567ca16581b207d92f2b57b9308d4f",
+  "cad_units": "millimetres",
+  "mesh_units": "metres",
+  "linear_deflection_mm": 0.08,
+  "angular_deflection_rad": 0.15,
+  "source_solids": 38,
+  "bounds_m": [
+    [
+      -71.65452486773249,
+      11.378518363722232,
+      -146.2743203476363
+    ],
+    [
+      71.65452486773249,
+      63.99647801981302,
+      18.82378318509609
+    ]
+  ],
+  "components": {
+    "frame_0": {
+      "file": "frame_0.stl",
+      "triangles": 180000,
+      "group": "frame"
+    },
+    "frame_1": {
+      "file": "frame_1.stl",
+      "triangles": 28968,
+      "group": "frame"
+    },
+    "module": {
+      "file": "module.stl",
+      "triangles": 97055,
+      "group": "module"
+    },
+    "hardware": {
+      "file": "hardware.stl",
+      "triangles": 51990,
+      "group": "hardware"
+    }
+  },
+  "camera_reference": {
+    "origin_kind": "CAD lens-opening centre; optical centre not calibrated to CAD",
+    "position_cad_m": [
+      -7.114548918611721e-35,
+      0.0521650169862149,
+      0.014809648986464719
+    ],
+    "rotation_cad_from_opencv": [
+      [
+        -1.0,
+        -0.0,
+        0.0
+      ],
+      [
+        0.0,
+        -0.9781476007337038,
+        -0.20791169081823843
+      ],
+      [
+        0.0,
+        -0.20791169081823843,
+        0.9781476007337038
+      ]
+    ],
+    "axes": "OpenCV: +X right, +Y down, +Z forward"
+  }
+}

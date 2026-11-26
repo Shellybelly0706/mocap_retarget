@@ -1,0 +1,41 @@
+{
+  "upstream_repository": "https://github.com/pupil-labs/neon-geometry",
+  "upstream_commit": "25879612cc47d6296f1d8ca1a792bb7f8246086e",
+  "downloaded_date": "2026-11-26",
+  "cad": {
+    "file": "cad/Neon_reference.STEP",
+    "sha256": "b7d56357b94bee990ac9e3050119f395a2567ca16581b207d92f2b57b9308d4f",
+    "url": "https://raw.githubusercontent.com/pupil-labs/neon-geometry/25879612cc47d6296f1d8ca1a792bb7f8246086e/Neon_reference.STEP"
+  },
+  "upstream_usage_terms": "UPSTREAM_README.md",
+  "calibration": {
+    "file": "scene_camera_370641.json",
+    "serial": "370641",
+    "source_url": "https://api.cloud.pupil-labs.com/v2/hardware/370641/calibration.v1?json",
+    "resolution": [
+      1600,
+      1200
+    ],
+    "resolution_source": "https://docs.pupil-labs.com/neon/data-collection/data-streams/",
+    "sha256": "174356743dec9a8fc7ff1c94ac49eed7a9b8de23e42909056cd66325e2de1057"
+  },
+  "imu_reference": {
+    "file": "imu_reference.json",
+    "source_url": "https://docs.pupil-labs.com/alpha-lab/imu-transformations/",
+    "location_source_url": "https://docs.pupil-labs.com/neon/data-collection/data-streams/#movement-imu-data",
+    "quality": "Manufacturer nominal camera-to-IMU transform; absolute CAD location inherits approximate lens-opening camera origin"
+  },
+  "coordinate_conventions": {
+    "cad": "millimetres, Y up; component placements preserved",
+    "meshes": "metres, original CAD axes",
+    "model": "CAD rotated +90 degrees around X to make Z up",
+    "optical_frame": "OpenCV: X right, Y down, Z forward",
+    "mujoco_camera": "OpenGL: X right, Y up, negative Z forward",
+    "imu": "Local X right, Y forward, Z up; quaternions rotate local IMU to magnetic/gravity world, not the OptiTrack world"
+  },
+  "limitations": [
+    "CAD lens opening is a reference origin, not a calibrated optical centre.",
+    "Native MuJoCo rendering is pinhole and does not apply OpenCV distortion.",
+    "Visual-only meshes: no mass, hinge or collision model is provided."
+  ]
+}

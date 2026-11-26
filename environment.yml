@@ -2,6 +2,11 @@ name: mocap_data
 
 channels:
   - conda-forge
+  - nodefaults
+
+variables:
+  PYTHONNOUSERSITE: "1"
+  PYTHONPATH: ""
 
 dependencies:
   - python=3.12
@@ -12,7 +17,12 @@ dependencies:
   - h5py>=3.12
   - pyyaml>=6.0
   - matplotlib-base>=3.8
+  - pillow>=10
+  - tk>=8.6
   - pip:
       - mujoco>=3.3,<4
       - olefile>=0.46,<1
+      - opencv-python>=4.10,<5
+      - pupil-labs-realtime-api>=1.6,<2
+      - av>=14,<20
 

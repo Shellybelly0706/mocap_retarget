@@ -1,0 +1,11 @@
+{
+  "source_url": "https://docs.pupil-labs.com/alpha-lab/imu-transformations/",
+  "location_source_url": "https://docs.pupil-labs.com/neon/data-collection/data-streams/#movement-imu-data",
+  "physical_location": "Top bar of the Neon sensor module",
+  "local_axes_when_worn": "X right, Y forward, Z up",
+  "quaternion": "WXYZ rotation from local IMU to magnetic/gravity world; world +Y magnetic north, -Z gravity",
+  "point_transform": "p_imu_m = R_imu_from_camera @ p_camera_m + t_imu_from_camera_m",
+  "rotation_imu_from_camera_x_degrees": -102.0,
+  "translation_imu_from_camera_m": [0.0, -0.0013, -0.00662],
+  "origin_quality": "Manufacturer nominal camera-to-IMU transform. CAD position inherits the approximate lens-opening camera origin; not a per-device surveyed chip centre."
+}

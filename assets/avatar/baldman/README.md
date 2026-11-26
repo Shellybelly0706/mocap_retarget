@@ -21,8 +21,8 @@ from pathlib import Path
 from utils.avatars.vrm import convert
 
 convert(
-    Path("assets/Baldman.vrm"),
-    Path("assets/baldman/upper_body_skin.npz"),
+    Path("assets/avatar/Baldman.vrm"),
+    Path("assets/avatar/baldman/upper_body_skin.npz"),
     upper_body=True,
 )
 PYTHON

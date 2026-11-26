@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="pupil_labs_neon">
+  <compiler angle="radian" inertiafromgeom="false" />
+  <option gravity="0 0 0" />
+  <custom>
+    <text name="neon_module_serial" data="370641" />
+    <text name="neon_camera_pose_source" data="CAD lens-opening centre; not a calibrated optical-centre transform" />
+    <text name="neon_camera_projection" data="Factory pinhole intrinsics; lens distortion stored but not rendered" />
+    <numeric name="neon_camera_matrix" data="883.379628806 0 801.970848834 0 883.038257515 598.65375191 0 0 1" />
+    <numeric name="neon_distortion_opencv" data="-0.129084929815 0.108352679045 0.000776083714678 -0.000669603933383 0.000957739278319 0.168684055947 0.0524174847297 0.0265842020865" />
+    <numeric name="neon_rotation_imu_from_camera" data="1 -0 0 0 -0.207911690818 0.978147600734 -0 -0.978147600734 -0.207911690818" />
+    <numeric name="neon_translation_imu_from_camera_m" data="0 -0.0013 -0.00662" />
+    <text name="neon_imu_reference_quality" data="Manufacturer nominal transform; CAD origin inherits approximate lens-opening reference" />
+  </custom>
+  <asset>
+    <mesh name="neon_frame_0" file="meshes/frame_0.stl" maxhullvert="64" />
+    <mesh name="neon_frame_1" file="meshes/frame_1.stl" maxhullvert="64" />
+    <mesh name="neon_module" file="meshes/module.stl" maxhullvert="64" />
+    <mesh name="neon_hardware" file="meshes/hardware.stl" maxhullvert="64" />
+  </asset>
+  <worldbody>
+    <body name="neon_glasses" quat="0.707106781186548 0.707106781186548 0 0">
+      <geom name="neon_frame_0_visual" type="mesh" mesh="neon_frame_0" rgba="0.09 0.11 0.14 1" contype="0" conaffinity="0" density="0" group="1" />
+      <geom name="neon_frame_1_visual" type="mesh" mesh="neon_frame_1" rgba="0.09 0.11 0.14 1" contype="0" conaffinity="0" density="0" group="1" />
+      <geom name="neon_module_visual" type="mesh" mesh="neon_module" rgba="0.17 0.19 0.22 1" contype="0" conaffinity="0" density="0" group="1" />
+      <geom name="neon_hardware_visual" type="mesh" mesh="neon_hardware" rgba="0.42 0.46 0.5 1" contype="0" conaffinity="0" density="0" group="1" />
+      <body name="neon_imu" pos="-7.11454891861e-35 0.0587850169862 0.0161096489865" xyaxes="-1 0 0 0 -4.89868442367e-13 1">
+        <site name="neon_imu_origin" size="0.0015" rgba="1 0.1 0.8 1" group="4" />
+        <site name="neon_imu_x" type="capsule" fromto="0 0 0 0.018 0 0" size="0.0005" rgba="1 0.1 0.1 1" group="4" />
+        <site name="neon_imu_y" type="capsule" fromto="0 0 0 0 0.018 0" size="0.0005" rgba="0.1 0.9 0.1 1" group="4" />
+        <site name="neon_imu_z" type="capsule" fromto="0 0 0 0 0 0.022" size="0.0005" rgba="0.1 0.3 1 1" group="4" />
+      </body>
+      <body name="neon_scene_camera_optical" pos="-7.11454891861e-35 0.0521650169862 0.0148096489865" xyaxes="-1 0 0 -0 -0.978147600734 -0.207911690818">
+        <!--OpenCV optical frame: +X right, +Y down, +Z forward.-->
+        <camera name="neon_scene_camera" quat="0 1 0 0" resolution="1600 1200" sensorsize="1 1" focalpixel="883.379628806 883.038257515" principalpixel="-1.97084883392 1.34624809001" />
+        <site name="neon_scene_camera_origin" size="0.001" rgba="1 0.8 0.1 1" group="5" />
+        <site name="neon_camera_x" type="capsule" fromto="0 0 0 0.025 0 0" size="0.00045" rgba="1 0.1 0.1 1" group="5" />
+        <site name="neon_camera_y" type="capsule" fromto="0 0 0 0 0.025 0" size="0.00045" rgba="0.1 0.9 0.1 1" group="5" />
+        <site name="neon_camera_z" type="capsule" fromto="0 0 0 0 0 0.035" size="0.00045" rgba="0.1 0.3 1 1" group="5" />
+      </body>
+    </body>
+  </worldbody>
+</mujoco>

@@ -8,6 +8,7 @@ from utils.avatars.models import (
     AvatarAsset,
     AvatarConfig,
 )
+from utils.paths import AVATAR_ASSETS_DIR
 from utils.paths import REPOSITORY_ROOT as _REPOSITORY_ROOT
 
 PROJECT_ROOT = _REPOSITORY_ROOT
@@ -16,15 +17,15 @@ PROJECT_ROOT = _REPOSITORY_ROOT
 AVATAR_CONFIGS = {
     "baldman": AvatarConfig(
         name="Baldman",
-        source=PROJECT_ROOT / "assets" / "Baldman.vrm",
-        skin=PROJECT_ROOT / "assets" / "baldman" / "upper_body_skin.npz",
-        texture=PROJECT_ROOT / "assets" / "baldman" / "avatar_texture.png",
+        source=AVATAR_ASSETS_DIR / "Baldman.vrm",
+        skin=AVATAR_ASSETS_DIR / "baldman" / "upper_body_skin.npz",
+        texture=AVATAR_ASSETS_DIR / "baldman" / "avatar_texture.png",
     ),
     "cookieman": AvatarConfig(
         name="Cookieman",
-        source=PROJECT_ROOT / "assets" / "Cookieman.vrm",
-        skin=PROJECT_ROOT / "assets" / "cookieman" / "upper_body_skin.npz",
-        texture=PROJECT_ROOT / "assets" / "cookieman" / "avatar_texture.png",
+        source=AVATAR_ASSETS_DIR / "Cookieman.vrm",
+        skin=AVATAR_ASSETS_DIR / "cookieman" / "upper_body_skin.npz",
+        texture=AVATAR_ASSETS_DIR / "cookieman" / "avatar_texture.png",
     ),
 }
 

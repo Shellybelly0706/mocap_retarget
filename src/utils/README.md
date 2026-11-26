@@ -15,6 +15,8 @@ from the repository root). Modules are grouped by responsibility:
 | `smplx` | MoSh++ configuration, body reconstruction, kinematics, scene building and rendering |
 | `synchronization` | Motive/Neon inputs, clock interpolation, signal alignment, projection and video rendering |
 | `avatars` | glTF/VRM decoding, avatar conversion, pose retargeting, obstacles and scenes |
+| `neon` | Reference CAD conversion, factory scene-camera calibration, MJCF generation and viewing |
+| `recording` | Aligned-session IO, head-mounted camera scenes, paired preview and shared-transport desktop playback |
 | `paths.py` | Repository, data, asset and bundled MoSh++ locations |
 
 Loading, analysis, kinematics, scene construction and playback live in separate
@@ -60,6 +62,27 @@ Marker-layout IO, validation, the interactive editor and reporting are also
 separate modules: `layout_io`, `layout`, `layout_editor` and `layout_reporting`.
 
 ## Other reusable APIs
+
+- `synchronization.preprocessing.align_recording(csv, neon_dir, output_dir)`
+  crops by shared global timestamps and maps each retained native video frame
+  to its nearest motion row. It writes an explicit mapping and provenance;
+  source Frame/Time cells and missing data remain intact. No clock correction
+  is applied. See the root README for the clock assumption and output formats.
+- `recording.session.load_session(directory)` reads that derived mapping/CSV.
+- `recording.scene.RecordingScene(session, model_path=None, mount_path=None)`
+  constructs a labeled skeleton or optional local neutral SMPL-X skin together
+  with head-mounted Neon CAD, real camera intrinsics and optical debug axes.
+- `recording.player.RecordingPlayer(scene).run()` opens the paired desktop
+  player. `recording.rendering.render_preview(scene, path, frame)` exports a PNG.
+- `smplx.neutral` handles the optional licensed neutral NPZ and direct visual
+  retargeting. It does not estimate shape or fill untracked limb motion.
+- `neon.mount` merges CAD/camera assets under a tracked head and computes an
+  editable visual nose-bridge mount; it does not calibrate extrinsics.
+- `neon.imu` defines the nominal scene-camera-to-module-IMU transform, loads
+  native WXYZ quaternions, samples with SLERP at unchanged video timestamps,
+  and validates a head/IMU world-heading registration. The paired scene can use
+  IMU rotation while keeping nose position geometric. Source hashes and fit
+  diagnostics are saved separately from the original time alignment.
 
 - `smplx.fitting.build_overrides(mode, sequence)` builds a MoSh++ configuration.
 - `smplx.kinematics.global_joint_motion(...)` computes joint transforms from poses.

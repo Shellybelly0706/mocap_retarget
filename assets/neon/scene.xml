@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="neon_inspection_scene">
+  <include file="neon.xml" />
+  <statistic center="0 0.04 0.04" extent="0.22" />
+  <visual>
+    <global offwidth="1600" offheight="1200" azimuth="70" elevation="-20" />
+    <headlight ambient="0.4 0.4 0.4" diffuse="0.7 0.7 0.7" specular="0.2 0.2 0.2" />
+    <map znear="0.0005" zfar="20" />
+    <rgba haze="0.12 0.15 0.2 1" />
+  </visual>
+  <asset>
+    <texture name="neon_floor" type="2d" builtin="checker" rgb1="0.24 0.28 0.34" rgb2="0.17 0.20 0.25" width="256" height="256" />
+    <material name="neon_floor" texture="neon_floor" texrepeat="12 12" reflectance="0.1" />
+  </asset>
+  <worldbody>
+    <light pos="0 -0.3 0.8" dir="0 0 -1" diffuse="0.8 0.8 0.8" />
+    <geom name="floor" type="plane" pos="0 0 -0.08" size="1 1 0.01" material="neon_floor" contype="0" conaffinity="0" />
+    <geom name="target_-0.09" type="box" pos="-0.09 -0.4 -0.03" size="0.025 0.025 0.025" rgba="0.8 0.12 0.1 1" contype="0" conaffinity="0" />
+    <geom name="target_0" type="box" pos="0 -0.4 -0.03" size="0.025 0.025 0.025" rgba="0.1 0.7 0.2 1" contype="0" conaffinity="0" />
+    <geom name="target_0.09" type="box" pos="0.09 -0.4 -0.03" size="0.025 0.025 0.025" rgba="0.1 0.25 0.9 1" contype="0" conaffinity="0" />
+  </worldbody>
+</mujoco>
