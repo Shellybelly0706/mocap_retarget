@@ -9,20 +9,41 @@ variables:
   PYTHONPATH: ""
 
 dependencies:
-  - python=3.12
-  - pip
-  - numpy>=2.0
-  - pandas>=2.2
-  - scipy>=1.14
-  - h5py>=3.12
+  # Shared viewer/processing/fitting stack: Chumpy requires NumPy <1.24.
+  - python=3.10
+  - numpy=1.23.5
+  - scipy=1.10.1
+  - pandas=2.2.3
+  - cython=0.29.37
+  - pip<25
+  - setuptools<70
+  - wheel
+  - chumpy=0.70
+  - h5py=3.11
   - pyyaml>=6.0
-  - matplotlib-base>=3.8
-  - pillow>=10
+  - matplotlib-base>=3.7,<3.8
+  - pillow>=10,<13
   - tk>=8.6
+  - scikit-learn<1.6
+  - loguru
+  - omegaconf
+  - trimesh
+  - ezc3d
+  - pyopengl
+  - pyglet<2
+  - pyzmq
   - pip:
-      - mujoco>=3.3,<4
+      - --extra-index-url https://download.pytorch.org/whl/cpu
+      - torch==2.5.1+cpu
+      - mujoco==3.17.0
       - olefile>=0.46,<1
-      - opencv-python>=4.10,<5
-      - pupil-labs-realtime-api>=1.6,<2
-      - av>=14,<20
+      - opencv-python==4.8.1.78
+      - pupil-labs-realtime-api==1.9.1
+      - av==16.0.1
+      - colour==0.1.5
+      - human_body_prior @ git+https://github.com/nghorbani/human_body_prior.git@f9afbbd4dac4d58270bf156b56b6f37831e9febd
+      - body_visualizer @ git+https://github.com/nghorbani/body_visualizer.git@5d0ac4615f32563f5dbd2f09c24aee75e3ae62ff
+      # CAD-to-STL regeneration uses the same environment.
+      - cadquery-ocp==7.8.1.1.post1
+      - vtk==9.3.1
 

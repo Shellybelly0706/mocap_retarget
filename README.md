@@ -59,11 +59,12 @@ and are not committed to Git.
 .
 ├── assets/
 │   ├── avatar/                   # avatar VRM files, textures, and derived skins
-│   ├── christmas/                # scene textures
+│   ├── background/               # scene backgrounds, grouped by theme
+│   │   └── christmas/            # Christmas scene textures
 │   └── neon/                     # Neon CAD, STL meshes, and calibrated camera
 ├── data/                         # imported sessions and model assets (ignored)
 ├── AGENTS.md                     # project purpose and agent working guidance
-├── environment.yml               # Python 3.12 data/viewer environment
+├── environment.yml               # unified Python 3.10 project environment
 ├── ENVIRONMENT.md                # data tooling notes
 ├── src/
 │   ├── utils/                    # reusable pipeline helpers
@@ -81,38 +82,34 @@ and are not committed to Git.
 └── moshpp_outputs/               # generated fitting results (ignored)
 ```
 
-## Environments
+## Environment
 
-Two environments are useful because legacy MoSh++/Chumpy requires Python 3.10
-and NumPy older than 1.24, while the data utilities use modern Python and
-NumPy.
-
-### Main collection and visualization environment
+Use **one environment, `mocap_data`**, for collection, processing, visualization,
+CAD conversion and legacy MoSh++ reconstruction. `environment.yml` is the
+single dependency definition. Python 3.10 and NumPy 1.23.5 support Chumpy while
+the viewer/video dependencies are pinned to compatible versions.
 
 ```bash
 conda env create -f environment.yml
 conda activate mocap_data
+python tests/setup_environment.py
 python -c "import numpy, pandas, scipy, h5py, matplotlib, mujoco, cv2, PIL, pupil_labs.realtime_api; print('environment OK')"
 ```
 
-The environment file includes the Neon real-time API, OpenCV video processing,
-and Pillow image export as well as the scientific and MuJoCo dependencies.
+The environment file includes the Neon API, OpenCV, PyAV, MuJoCo, CPU PyTorch,
+Chumpy, Human Body Prior and CAD libraries. The setup command builds the
+bundled mesh and scan-to-mesh extensions and links the bundled MoSh++ source.
 
 See [`ENVIRONMENT.md`](ENVIRONMENT.md) for Motive CSV and
 TAK notes.
 
-### MoSh++ fitting and rendering
+For an existing checkout, update with
+`conda env update -n mocap_data -f environment.yml --prune`, activate
+`mocap_data`, and rerun `python tests/setup_environment.py`.
 
-Create a separate Python 3.10 environment and follow the complete installation
-instructions in [`src/moshpp/README.md`](src/moshpp/README.md). The key constraints are:
-
-- Python 3.10 or older;
-- `numpy<1.24` and `cython<3`;
-- Chumpy installed without build isolation;
-- `psbody.mesh`, `psbody.smpl`, and the MoSh++ scan-to-mesh extension.
-
-The fitting and headless rendering commands below assume that this environment
-is active and that the local `moshpp` package is importable.
+MoSh++ uses this same environment. Its separately supplied `psbody.smpl`
+component remains an external prerequisite; consolidating dependencies does
+not supply that missing solver binary.
 
 ## Required local assets
 
@@ -120,16 +117,17 @@ The fitting profiles expect these files relative to the repository root:
 
 ```text
 data/1112/c3d/*.c3d
-data/1112/c3d/marker_layout/*/marker_layout.json
-data/smplx/SMPLX_NEUTRAL_moshpp.pkl
-data/smplx/SMPLX_NEUTRAL.npz
-data/smplx/moshpp_support/pose_body_prior.pkl
-data/smplx/moshpp_support/pose_hand_prior.npz
+assets/avatar/smplx/marker_layout/*/marker_layout.json
+assets/avatar/smplx/SMPLX_NEUTRAL_moshpp.pkl
+assets/avatar/smplx/SMPLX_NEUTRAL.npz
+assets/avatar/smplx/moshpp_support/pose_body_prior.pkl
+assets/avatar/smplx/moshpp_support/pose_hand_prior.npz
 ```
 
-SMPL-X model files require acceptance of the SMPL-X license and must be
-obtained separately. Capture data, licensed model files, and generated results
-should not be committed.
+The user supplied the licensed SMPL-X models and fitting support files through
+Git LFS on `main` (commit `390216a`), imported into `assets/avatar/smplx/`.
+Run `git lfs pull` after cloning to retrieve actual models rather than pointer
+files. Capture data and generated results remain local under ignored `data/`.
 
 Scripts resolve asset, capture, and output paths relative to the repository
 root. Install bundled libraries from `src/mesh` and `src/moshpp`; existing
@@ -171,9 +169,32 @@ human-body motion and quality inspection:
 - `rendering` draws mesh/marker previews, and `head_markers` provides diagnostics.
 
 Fitting and reconstruction require the local licensed model assets and the
-appropriate environment described above. Import these helpers directly when
+shared `mocap_data` environment described above. Import these helpers directly when
 building a workflow; the former fitting, rendering, and viewer CLI wrappers
 have been removed.
+
+The legacy MoSh++ fitting workflow is now available through
+`tests/fit_smplx.py`, with reusable orchestration in `utils.smplx.pipeline`:
+
+```bash
+conda activate mocap_data
+python tests/fit_smplx.py --check-only
+```
+
+The user selected this marker-based reconstruction workflow for 1126 first.
+The fitting environment and imported model/priors are prepared. Main commit
+`77c22c3` supplied the layouts under `assets/avatar/smplx/marker_layout/`.
+Their model checksum and neutral topology have been validated. The default
+1126 job reuses the complete 25-marker body layout; all 25 labels are present,
+and 1,370 frames meet the 95% availability threshold. The 14 custom markers
+are excluded from this first pass. Reusing the legacy layout is an
+initialization; new-subject Stage I calibration is still needed. Optimization
+is pending only `smpl-fast-derivatives` / `psbody.smpl`. Preflight reports that
+blocker and does not produce fitted parameters. Once ready, use `--mode smoke` or
+`--mode full`; outputs include body shape, per-frame pose/translation, source
+sample rows and C3D-relative times. See
+[`ENVIRONMENT.md`](ENVIRONMENT.md#legacy-mosh-reconstruction)
+for setup, layout reuse and the Stage I/II workflow.
 
 ## Align and inspect the first 1126 recording
 
@@ -223,14 +244,13 @@ orbit, Shift-drag to pan, and scroll to zoom. Space toggles playback, arrows
 step, and Home restarts. Debug controls show the solved skeleton, raw markers,
 and camera optical axes: **X right/red, Y down/green, Z forward/blue**.
 
-Without a licensed model, the player explicitly shows the solved skeleton
-with a translucent head reference. This is **not a SMPL-X avatar**. The neutral
-model loading and visual-retargeting path is prepared; its appearance and nose
-fit remain unverified until the local licensed model is available:
+The player defaults to the solved skeleton with a translucent head reference.
+This is **not a SMPL-X avatar**. The imported neutral model has been validated
+and rendered with Neon CAD and IMU axes. Select it explicitly:
 
 ```bash
 python tests/visualize_recording.py data/1126/aligned/recording_1 \
-  --smplx-model data/models/SMPLX_NEUTRAL.npz
+  --smplx-model assets/avatar/smplx/SMPLX_NEUTRAL.npz
 ```
 
 This path uses the neutral template, zero shape coefficients and linear blend
@@ -239,16 +259,28 @@ legs and facial joints are untracked and retain neutral pose relative to their
 parents. A pose reference 0.5 seconds into the retained recording sets the
 visual rig alignment; it does not trim or shift the recorded timeline.
 
-The glasses follow the head rigidly. Their default mount aligns an approximate
-CAD bridge point to an estimated nose bridge. With SMPL-X, this estimate uses
-the [official nose-tip vertex landmark](https://github.com/vchoutas/smplx/blob/main/smplx/vertex_ids.py)
-plus an up/back bridge offset. **Focus head** and **Glasses fit…** let you inspect
+The glasses follow the head rigidly. With SMPL-X, their default CAD brow-bar
+anchor is placed 8 mm above the midpoint of the model's eye landmarks. A ray
+through the actual nasal surface sets its depth, with a 14 mm forward standoff
+for the CAD bar/nose-pad geometry. This replaces the lower nose-tip offset that
+placed the frame across the cheeks. **Focus head** and **Glasses fit…** let you inspect
 and adjust translation/rotation; save to `neon_mount.json` and reload with
 `--mount data/1126/aligned/recording_1/neon_mount.json`. This is a visual mount,
 not calibrated camera-to-head or OptiTrack extrinsics. The attached XML camera
 retains module `370641` factory intrinsics and its visible optical frame;
 MuJoCo renders pinhole projection, while the recorded video retains lens
 distortion.
+
+The CAD's separate rigid temple arms are opened about nominal hinges to clear
+the neutral head, without scaling the frame or changing its front camera/IMU
+assembly. This is an approximate visual fit based on the avatar surface, not a
+measured participant fit. Subject-specific head shape and camera/head extrinsics
+still require fitting and calibration.
+
+For the first 1126 take, IMU and OptiTrack head orientation disagree by about
+27 degrees at aligned frame 0. The player shows the per-frame residual in IMU
+mode. Turn off **IMU orientation** to inspect the rigid head attachment; changing
+the visual mount does not resolve that orientation discrepancy or change timing.
 
 To use recorded IMU orientation for the glasses:
 
@@ -320,7 +352,7 @@ Other processing is available through reusable helper packages:
 See [`src/utils/README.md`](src/utils/README.md) for the module map and Python
 examples. Runnable workflow entry points belong in `tests/`; the current
 OptiTrack entry point imports the helper API directly. Run regression checks
-with `python -m unittest discover -s tests/unit -v` in the data/viewer environment.
+with `python -m unittest discover -s tests/unit -v` in `mocap_data`.
 
 ## Monitor Pupil Labs Neon clock offsets
 
@@ -330,7 +362,7 @@ See [`src/neon/README.md`](src/neon/README.md) for setup and output details.
 Run it from the repository root:
 
 ```bash
-python -m pip install -r src/neon/requirements.txt
+conda activate mocap_data
 PYTHONPATH=src python -m neon
 ```
 

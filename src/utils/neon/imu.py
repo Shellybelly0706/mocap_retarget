@@ -100,7 +100,7 @@ def sample_native_imu(
         )
     epoch = int(times[0])
     rotations = Slerp(
-        (times - epoch) / 1e9, Rotation.from_quat(quats[valid], scalar_first=True)
+        (times - epoch) / 1e9, Rotation.from_quat(quats[valid][:, [1, 2, 3, 0]])
     )((targets - epoch) / 1e9).as_matrix()
     report = {
         "source": "native Neon module imu ps1.raw (not extimu/phone)",
@@ -248,7 +248,7 @@ def save_imu_report(
         },
     }
     (directory / "imu_attachment.json").write_text(json.dumps(report, indent=2) + "\n")
-    quats = Rotation.from_matrix(sampled.rotations).as_quat(scalar_first=True)
+    quats = Rotation.from_matrix(sampled.rotations).as_quat()[:, [3, 0, 1, 2]]
     with (directory / "imu_attachment.csv").open("w", newline="") as stream:
         writer = csv.writer(stream)
         writer.writerow(

@@ -38,7 +38,7 @@ import os
 import chumpy as ch
 import numpy as np
 from chumpy import Ch
-from human_body_prior.tools.omni_tools import get_support_data_dir
+from moshpp.tools.support_data import get_support_data_dir
 from sklearn.neighbors import NearestNeighbors
 
 

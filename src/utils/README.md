@@ -21,8 +21,8 @@ from the repository root). Modules are grouped by responsibility:
 
 Loading, analysis, kinematics, scene construction and playback live in separate
 files. Data-processing helpers can be imported without loading GUI or fitting
-dependencies. Rendering and fitting functions require their respective
-environments and local model assets.
+dependencies. Rendering and fitting use the shared `mocap_data` environment
+and the appropriate local model assets.
 
 ## OptiTrack capture loading and visualization
 
@@ -78,6 +78,8 @@ separate modules: `layout_io`, `layout`, `layout_editor` and `layout_reporting`.
   retargeting. It does not estimate shape or fill untracked limb motion.
 - `neon.mount` merges CAD/camera assets under a tracked head and computes an
   editable visual nose-bridge mount; it does not calibrate extrinsics.
+- `neon.frame_fit` opens the CAD's rigid temple arms about nominal hinges to
+  accommodate the neutral head, preserving front-frame/camera/IMU geometry.
 - `neon.imu` defines the nominal scene-camera-to-module-IMU transform, loads
   native WXYZ quaternions, samples with SLERP at unchanged video timestamps,
   and validates a head/IMU world-heading registration. The paired scene can use
@@ -85,6 +87,16 @@ separate modules: `layout_io`, `layout`, `layout_editor` and `layout_reporting`.
   diagnostics are saved separately from the original time alignment.
 
 - `smplx.fitting.build_overrides(mode, sequence)` builds a MoSh++ configuration.
+- `smplx.fitting.build_capture_overrides(...)` applies those legacy settings
+  to an explicitly supplied capture/layout, including 1126.
+- `smplx.pipeline.preflight(...)` checks marker assignments, real observation
+  coverage and the legacy runtime without starting optimization.
+- `smplx.pipeline.run_legacy_fit(...)` runs the existing MoSh++ Stage I/II
+  solver and saves AMASS-style parameters with explicit source-frame metadata.
+  It uses the same `mocap_data` environment as the viewers, plus completed
+  surface assignments; the imported 25-marker legacy body layout is validated for
+  initialization on 1126. Only the separate `psbody.smpl` component remains
+  pending before fitting can start.
 - `smplx.kinematics.global_joint_motion(...)` computes joint transforms from poses.
 - `smplx.reconstruction.reconstruct_vertices(...)` reconstructs a fitted body.
 - `smplx.head_markers.diagnose_head_markers(result_path, model_path, output_path)` creates diagnostics without CLI parsing.

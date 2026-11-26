@@ -11,6 +11,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from utils.avatars.pose import anatomical_frames, quaternions_aligning_z
+from utils.neon.frame_fit import TempleFitter, attach_temple_hinges, hinge_quaternion
 from utils.neon.imu import imu_pose_in_cad, register_imu_world, sample_native_imu
 from utils.neon.model import values
 from utils.neon.mount import CAD_BRIDGE_M, attach_neon, load_mount, mount_transform
@@ -33,7 +34,7 @@ class RecordingScene:
         self.label = (
             "SMPL-X neutral (visual retargeting)"
             if model_path
-            else "OptiTrack skeleton (SMPL-X model pending)"
+            else "OptiTrack skeleton"
         )
         self.reference = min(
             int(np.searchsorted(session.times, 0.5)), len(session.times) - 1
@@ -234,6 +235,8 @@ class RecordingScene:
         self.use_imu = use_imu
         self.imu_sampled = None
         self.imu_registration = None
+        self.temple_fitter = None
+        self.temple_fit = None
         if use_imu:
             stamps = np.array(
                 [int(row["timestamp_ns"]) for row in session.mapping], dtype=np.int64
@@ -255,6 +258,15 @@ class RecordingScene:
             _, self.rotation_cad_from_imu = imu_pose_in_cad(
                 reference["position_cad_m"], reference["rotation_cad_from_opencv"]
             )
+        if model_path:
+            self.temple_fitter = TempleFitter(
+                (avatar.vertices - avatar.joints[15]) * scale, avatar.faces
+            )
+            position, quaternion = self._mount_pose(self.reference)
+            self.temple_fit = self.temple_fitter.fit(
+                position, Rotation.from_quat(quaternion[[1, 2, 3, 0]]).as_matrix()
+            )
+            attach_temple_hinges(self.xml, self.temple_fit)
         self.model = mujoco.MjModel.from_xml_string(
             ET.tostring(self.xml, encoding="unicode")
         )
@@ -281,6 +293,7 @@ class RecordingScene:
         self.options.geomgroup[2] = int(not model_path)
         self.options.geomgroup[3] = 0
         self.options.geomgroup[4] = 1
+        self.options.skingroup[4] = 1
         self.options.flags[mujoco.mjtVisFlag.mjVIS_SKIN] = 1
         self.set_frame(0)
 
@@ -306,6 +319,19 @@ class RecordingScene:
             self.model.geom_size[geom_id, 1] = length[frame]
         for geom_id, valid in self.marker_geoms:
             self.model.geom_rgba[geom_id, 3] = float(valid[frame])
+        position, quaternion = self._mount_pose(frame)
+        glasses = self.model.body("neon_glasses")
+        self.model.body_pos[glasses.id] = position
+        self.model.body_quat[glasses.id] = quaternion
+        if self.temple_fit:
+            for side in ("left", "right"):
+                body = self.model.body(f"neon_temple_{side}")
+                self.model.body_quat[body.id] = hinge_quaternion(
+                    side, self.temple_fit[side]["opening_deg"]
+                )
+        mujoco.mj_forward(self.model, self.data)
+
+    def _mount_pose(self, frame: int):
         if self.use_imu:
             rotation_delta = Rotation.from_euler(
                 "xyz", self.mount.get("rotation_deg_xyz", [0, 0, 0]), degrees=True
@@ -324,21 +350,35 @@ class RecordingScene:
             quaternion = Rotation.from_matrix(rotation_h_a).as_quat()[[3, 0, 1, 2]]
         else:
             position, quaternion = mount_transform(self.bridge_from_head, self.mount)
-        glasses = self.model.body("neon_glasses")
-        self.model.body_pos[glasses.id] = position
-        self.model.body_quat[glasses.id] = quaternion
-        mujoco.mj_forward(self.model, self.data)
+        return position, quaternion
 
     def set_mount(self, settings: dict):
         mount_transform(
             self.bridge_from_head, settings
         )  # validate before changing state
         self.mount = settings
+        if self.temple_fitter:
+            position, quaternion = self._mount_pose(self.reference)
+            self.temple_fit = self.temple_fitter.fit(
+                position, Rotation.from_quat(quaternion[[1, 2, 3, 0]]).as_matrix()
+            )
         self.set_frame(self.frame)
 
     def focus_head(self):
         self.camera.lookat[:] = self.data.body("neon_scene_camera_optical").xpos
         self.camera.distance = 0.45
+
+    def save_visual_fit(self, path: Path):
+        report = {
+            "purpose": "approximate avatar/CAD visual fit, not calibrated extrinsics",
+            "anchor_method": "eye height + nasal surface + CAD brow-bar standoff",
+            "brow_bar_head_bind_m": self.bridge_from_head.tolist(),
+            "mount_adjustment": self.mount,
+            "orientation_mode": "registered IMU" if self.use_imu else "OptiTrack head",
+            "geometry_fit_reference_frame": self.reference,
+            "temples": self.temple_fit,
+        }
+        Path(path).write_text(json.dumps(report, indent=2) + "\n")
 
     def save_xml(self, path: Path):
         for name, positions, quaternions in self.tracks:
@@ -349,6 +389,11 @@ class RecordingScene:
         body = self.model.body("neon_glasses")
         glasses.set("pos", values(self.model.body_pos[body.id]))
         glasses.set("quat", values(self.model.body_quat[body.id]))
+        if self.temple_fit:
+            for side in ("left", "right"):
+                name = f"neon_temple_{side}"
+                element = self.xml.find(f".//body[@name='{name}']")
+                element.set("quat", values(self.model.body(name).quat))
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         ET.indent(self.xml)
         ET.ElementTree(self.xml).write(path, encoding="utf-8", xml_declaration=True)

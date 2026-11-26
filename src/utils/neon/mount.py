@@ -14,7 +14,7 @@ from utils.neon.model import values
 from utils.paths import ASSETS_DIR
 from utils.smplx.models import SMPLX_TO_MUJOCO
 
-# Approximate underside of the bridge in the reference CAD, metres.
+# Approximate CAD brow-bar anchor, metres; this is above/forward of the nose pads.
 CAD_BRIDGE_M = np.array([0, 0.0452, 0.0136])
 
 

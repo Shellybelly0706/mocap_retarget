@@ -120,8 +120,8 @@ def connect_device(ip: str | None, port: int, discovery_timeout: float) -> Any:
         from pupil_labs.realtime_api.simple import Device, discover_one_device
     except ImportError as exc:
         raise RuntimeError(
-            "缺少 pupil-labs-realtime-api；请运行 "
-            "pip install -r neon/requirements.txt"
+            "缺少 pupil-labs-realtime-api；请使用根目录 environment.yml "
+            "更新并激活 mocap_data 环境。"
         ) from exc
 
     if ip:

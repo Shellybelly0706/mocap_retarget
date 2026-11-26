@@ -6,6 +6,11 @@ Recorded: 2026-11-26. Status: open.
 
 - [ ] Establish and validate the rigid transform between a tracked glasses
   marker body and the Neon scene camera / IMU.
+- [ ] Investigate the initial 1126 head/IMU orientation disagreement. Aligned
+  frame 0 has about 27 degrees residual, despite the later low fitting residual.
+  The visual bridge/temple correction does not resolve this discrepancy; retain
+  every frame and inspect the existing residuals before attributing it to pose,
+  mounting, timing or magnetic effects.
 
 The current viewer does **not** provide a calibrated IMU XYZ position in the
 OptiTrack world. Both orientation modes derive position from the tracked head

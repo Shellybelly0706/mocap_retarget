@@ -15,8 +15,42 @@ from scipy.spatial.transform import Rotation
 from utils.avatars.pose import anatomical_frames, limb_frames
 from utils.smplx.models import SMPLX_TO_MUJOCO
 
-# Official SMPL-X vertex landmark: https://github.com/vchoutas/smplx/blob/main/smplx/vertex_ids.py
+# Official SMPL-X landmarks: https://github.com/vchoutas/smplx/blob/main/smplx/vertex_ids.py
 NOSE_VERTEX = 9120
+EYE_VERTICES = (9448, 9929)
+
+
+def estimate_glasses_bridge(vertices: np.ndarray, faces: np.ndarray) -> np.ndarray:
+    """Estimate the CAD brow-bar anchor in native SMPL-X axes (metres).
+
+    Place the bridge above the eye line and in front of the nasal surface.
+    The 14 mm standoff accounts for the CAD bar being forward of its nose pads;
+    it is a visual fit, not a measured camera/head transform. Using the actual
+    nasal surface avoids placing the brow bar near the nose tip and cheeks.
+    """
+    eye_midpoint = np.mean(vertices[list(EYE_VERTICES)], axis=0)
+    xy = eye_midpoint[:2] + [0, 0.008]
+    triangles = vertices[faces]
+    a = triangles[:, 0, :2]
+    u = triangles[:, 1, :2] - a
+    v = triangles[:, 2, :2] - a
+    delta = xy - a
+    determinant = u[:, 0] * v[:, 1] - u[:, 1] * v[:, 0]
+    valid = np.abs(determinant) > 1e-12
+    triangles, u, v, delta, determinant = (
+        item[valid] for item in (triangles, u, v, delta, determinant)
+    )
+    b = (delta[:, 0] * v[:, 1] - delta[:, 1] * v[:, 0]) / determinant
+    c = (u[:, 0] * delta[:, 1] - u[:, 1] * delta[:, 0]) / determinant
+    inside = (b >= -1e-8) & (c >= -1e-8) & (b + c <= 1 + 1e-8)
+    if not np.any(inside):
+        raise ValueError("Cannot locate the nasal surface above the SMPL-X eye line")
+    depth = (
+        (1 - b - c) * triangles[:, 0, 2]
+        + b * triangles[:, 1, 2]
+        + c * triangles[:, 2, 2]
+    )
+    return np.array([*xy, np.max(depth[inside]) + 0.014])
 
 
 @dataclass
@@ -61,9 +95,7 @@ def load_neutral_model(path: Path) -> NeutralAvatar:
     for index, parent in enumerate(parents[1:], 1):
         if not 0 <= parent < index:
             raise ValueError("SMPL-X joint parents are not in topological order")
-    # Nose-tip landmark plus a provisional bridge offset (up/back in SMPL-X).
-    # This is an editable visual placement, never a measured head-camera extrinsic.
-    bridge = vertices[NOSE_VERTEX] + [0, 0.015, -0.012]
+    bridge = estimate_glasses_bridge(vertices, faces)
     transform = SMPLX_TO_MUJOCO.T
     return NeutralAvatar(
         vertices @ transform,

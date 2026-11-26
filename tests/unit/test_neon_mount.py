@@ -11,10 +11,41 @@ from scipy.spatial.transform import Rotation
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
+from utils.neon.frame_fit import attach_temple_hinges, frame_parts
 from utils.neon.mount import CAD_BRIDGE_M, attach_neon, mount_transform
 
 
 class NeonMountTests(unittest.TestCase):
+    def test_opening_rigid_arms_preserves_sensor_frames_and_all_cad_triangles(self):
+        root = ET.Element("mujoco")
+        ET.SubElement(root, "compiler", inertiafromgeom="false")
+        head = ET.SubElement(ET.SubElement(root, "worldbody"), "body", name="head")
+        attach_neon(root, head, np.array([0, -0.09, 0.06]), {})
+        original = mujoco.MjModel.from_xml_string(ET.tostring(root, encoding="unicode"))
+        before = mujoco.MjData(original)
+        mujoco.mj_forward(original, before)
+        fit = {"left": {"opening_deg": 8}, "right": {"opening_deg": 9}}
+        attach_temple_hinges(root, fit)
+        opened = mujoco.MjModel.from_xml_string(ET.tostring(root, encoding="unicode"))
+        after = mujoco.MjData(opened)
+        mujoco.mj_forward(opened, after)
+        self.assertEqual(original.mesh_facenum.sum(), opened.mesh_facenum.sum())
+        for name in ("neon_glasses", "neon_scene_camera_optical", "neon_imu"):
+            np.testing.assert_allclose(before.body(name).xpos, after.body(name).xpos)
+            np.testing.assert_allclose(before.body(name).xmat, after.body(name).xmat)
+        np.testing.assert_array_equal(original.cam_intrinsic, opened.cam_intrinsic)
+        _, parts = frame_parts()
+        cad_rotation = after.body("neon_glasses").xmat.reshape(3, 3)
+        cad_origin = after.body("neon_glasses").xpos
+        for side, (part, pivot) in parts.items():
+            body = after.body(f"neon_temple_{side}")
+            # Opening must leave each hinge fixed and move its rear end outward.
+            np.testing.assert_allclose(body.xpos, cad_origin + cad_rotation @ pivot)
+            point = part.vertices[np.argmin(part.vertices[:, 2])]
+            world = body.xpos + body.xmat.reshape(3, 3) @ (point - pivot)
+            moved = cad_rotation.T @ (world - cad_origin)
+            self.assertGreater(abs(moved[0]), abs(point[0]) + 0.01)
+
     def test_bridge_anchor_and_camera_follow_translated_rotated_head(self):
         root = ET.Element("mujoco")
         ET.SubElement(root, "compiler", inertiafromgeom="false")

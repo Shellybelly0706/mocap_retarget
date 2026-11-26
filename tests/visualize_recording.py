@@ -78,6 +78,17 @@ def main():
     if not 0 <= args.frame < len(session.times):
         parser.error("--frame is outside the aligned recording")
     scene.set_frame(args.frame)
+    if scene.temple_fit:
+        for side in ("left", "right"):
+            fit = scene.temple_fit[side]
+            status = (
+                "clearance reached"
+                if fit["clearance_reached"]
+                else "clearance NOT reached"
+            )
+            print(
+                f"Visual {side} arm opening: {fit['opening_deg']:.2f}°; approximate {status}"
+            )
     if args.focus_head:
         scene.focus_head()
     if args.export_scene:
@@ -103,6 +114,8 @@ def main():
         player = RecordingPlayer(scene)
         player.seek(args.frame)
         player.run()
+    if scene.temple_fit:
+        scene.save_visual_fit(session.directory / "neon_visual_fit.json")
 
 
 if __name__ == "__main__":

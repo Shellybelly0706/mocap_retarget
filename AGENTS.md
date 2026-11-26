@@ -38,9 +38,11 @@ workflow that is still being developed.
   agreement is an explicit, unverified assumption.
 - `src/neon/` is our clock-offset monitor. Recording happens through Neon
   Companion / Neon Monitor; the monitor does not capture scene video itself.
-- Store imported sessions and local model files under root `data/`. Its
-  contents are ignored by Git except `.gitkeep`; do not commit captures,
-  licensed models, or generated session results.
+- Store imported sessions and generated results under root `data/`. Its
+  contents are ignored by Git except `.gitkeep`; do not commit captures or
+  generated session results. The user supplied licensed SMPL-X assets through
+  Git LFS on `main`; these now live under `assets/avatar/smplx/`. Keep additional
+  private models in ignored `data/` unless the user explicitly directs otherwise.
 
 ## Code organization
 
@@ -51,16 +53,37 @@ workflow that is still being developed.
   fitting dependencies out of data-only helpers where possible.
 - Group avatar models and their derived textures/skins under `assets/avatar/`.
   Neon geometry and camera calibration live under `assets/neon/`.
+- Group scene backgrounds under `assets/background/<theme>/`, such as
+  `assets/background/christmas/`. Add future backgrounds as sibling themes
+  and use `BACKGROUND_ASSETS_DIR` from `utils.paths` for their shared root.
 - `tests/visualize_recording.py` shares one transport between its MuJoCo left
-  panel and recorded Neon video right panel. Its default is a labeled skeleton
-  until the user's licensed neutral SMPL-X NPZ is available. Do not call the
-  skeleton or another avatar SMPL-X. The user has the file on another computer
-  and asked to supply it later; do not repeatedly request it during this work.
+  panel and recorded Neon video right panel. Its default is a labeled skeleton;
+  use `--smplx-model assets/avatar/smplx/SMPLX_NEUTRAL.npz` for the imported,
+  validated neutral model. Do not call the skeleton or another avatar SMPL-X.
 - The optional neutral SMPL-X skin path is visual retargeting, not MoSh++
-  fitting. Its real-model appearance and nose fit still need validation. Legs
+  fitting. The real-model skin has been rendered; nose fit remains provisional. The
+  default SMPL-X glasses anchor uses eye height and the nasal surface, with a CAD
+  brow-bar standoff; do not restore the low nose-tip offset. `neon.frame_fit`
+  opens the separate rigid CAD arms about nominal hinges for approximate skin
+  clearance. It does not scale the glasses or alter the front camera/IMU assembly.
+  Do not change the subject's head shape or call this a calibrated physical fit. Legs
   and face are untracked neutral pose. Neon nose-bridge placement is provisional
   and adjustable; factory camera intrinsics do not calibrate head-camera
   extrinsics. Keep optical axes visible for debugging and retain that distinction.
+- The user's next SMPL-X objective is a saved reconstruction of the OptiTrack
+  motion as SMPL-X parameters, not only displaying an avatar. Treat the current
+  direct-retargeting viewer as a preview; do not describe it as completed
+  marker-based body-shape/pose fitting.
+- The user selected the legacy MoSh++ workflow first. `tests/fit_smplx.py`
+  restores that workflow using reusable fitting/pipeline helpers. Use the
+  shared `mocap_data` environment. The layouts arrived in main commit `77c22c3` and
+  live under `assets/avatar/smplx/marker_layout/`. Their model checksum and
+  neutral topology have been verified. The first 1126 pass uses the complete
+  legacy 25-marker body layout; its 14 CustomMarker tracks are explicitly
+  excluded. Treat this as transferred initialization, with fresh Stage I
+  calibration still required. The 39-marker draft remains unset for future
+  custom-marker mapping. Only `smpl-fast-derivatives` / `psbody.smpl` is still
+  pending a later upload; do not claim the fit ran or repeatedly request it.
 - Neon's IMU is inside the module's top bar, with local X right, Y forward,
   Z up. Use `assets/neon/imu_reference.json` and `utils.neon.imu` for the nominal
   camera-to-IMU transform; do not co-locate the two frame origins. The IMU's
@@ -82,12 +105,17 @@ workflow that is still being developed.
   adaptations. `src/neon/` and `src/utils/` contain project-specific code.
 
 See `src/utils/README.md` for helper APIs and `ENVIRONMENT.md` for data tooling.
-The data/viewer and legacy MoSh++ environments have different Python and NumPy
-requirements; use the appropriate environment for each workflow.
+Use one project environment, `mocap_data`, defined only by root
+`environment.yml`: Python 3.10 / NumPy 1.23.5 with compatible viewer, video,
+Neon, CAD and fitting dependencies. `tests/setup_environment.py` builds the
+bundled native components in that environment. Do not reintroduce a separate
+MoSh++ environment YAML or requirements file. The external `psbody.smpl`
+component is still pending; do not claim environment consolidation completed
+the fit.
 
 ## Verification
 
-For helper changes, run the relevant checks in the data/viewer environment:
+For helper changes, run the relevant checks in the shared `mocap_data` environment:
 
 ```bash
 python -m unittest discover -s tests/unit -v

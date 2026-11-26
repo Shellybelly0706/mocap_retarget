@@ -156,11 +156,11 @@ are removed except degenerate faces.
 
 ## Regenerate the meshes and XML
 
-Loading the shipped assets needs no CAD dependency. To regenerate them, use a
-separate Python 3.11 environment with NumPy and
-`cadquery-ocp==7.8.1.1.post1` (which also installs `vtk==9.3.1`):
+CAD regeneration uses the shared `mocap_data` environment. The unified
+`environment.yml` includes `cadquery-ocp==7.8.1.1.post1` and `vtk==9.3.1`:
 
 ```bash
+conda activate mocap_data
 PYTHONPATH=src python - <<'PY'
 from pathlib import Path
 from utils.neon.cad import convert_reference_cad

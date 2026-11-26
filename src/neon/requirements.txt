@@ -1,2 +1,0 @@
-pupil-labs-realtime-api>=1.6
-

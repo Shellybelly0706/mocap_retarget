@@ -65,7 +65,7 @@ try:
     from pytorch3d.structures import Meshes
 except ImportError:
     Meshes = None
-from human_body_prior.tools.omni_tools import get_support_data_dir
+from moshpp.tools.support_data import get_support_data_dir
 
 
 class Markerlayout(TypedDict):

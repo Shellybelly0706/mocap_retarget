@@ -10,10 +10,42 @@ from scipy.spatial.transform import Rotation
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from utils.avatars.pose import anatomical_frames
-from utils.smplx.neutral import NeutralAvatar, retarget_neutral
+from utils.smplx.neutral import (
+    EYE_VERTICES,
+    NeutralAvatar,
+    estimate_glasses_bridge,
+    retarget_neutral,
+)
 
 
 class NeutralRetargetTests(unittest.TestCase):
+    def test_glasses_anchor_uses_eye_height_and_front_nasal_surface(self):
+        vertices = np.zeros((max(EYE_VERTICES) + 1, 3))
+        vertices[list(EYE_VERTICES)] = [[-0.03, 0.31, 0.075], [0.03, 0.31, 0.075]]
+        # Two sloped surfaces: the nasal surface is in front of the skull back.
+        vertices[:6] = [
+            [-0.01, 0.30, 0.10],
+            [0.01, 0.30, 0.10],
+            [0, 0.34, 0.08],
+            [-0.01, 0.30, -0.09],
+            [0.01, 0.30, -0.09],
+            [0, 0.34, -0.09],
+        ]
+        faces = np.array([[0, 1, 2], [3, 4, 5]])
+        anchor = estimate_glasses_bridge(vertices, faces)
+        np.testing.assert_allclose(anchor, [0, 0.318, 0.091 + 0.014])
+        # A model-space translation must move the mount by the same amount.
+        offset = np.array([0.02, 0.10, -0.03])
+        np.testing.assert_allclose(
+            estimate_glasses_bridge(vertices + offset, faces), anchor + offset
+        )
+
+    def test_glasses_anchor_refuses_missing_nasal_surface(self):
+        vertices = np.zeros((max(EYE_VERTICES) + 1, 3))
+        vertices[list(EYE_VERTICES), 1] = 0.31
+        with self.assertRaisesRegex(ValueError, "nasal surface"):
+            estimate_glasses_bridge(vertices, np.array([[0, 1, 2]]))
+
     def test_rigid_capture_preserves_global_rotation_and_bind_lengths(self):
         # Deliberately synthetic joint tree and vertices, not a human mesh.
         joints = np.random.default_rng(7).normal(0, 0.15, (55, 3))

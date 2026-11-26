@@ -24,11 +24,12 @@ Time Echo 的时间戳分辨率是 1 ms。程序通过重复测量、选择低�
 
 ## 安装
 
-建议使用现有的 `pupil_labs` Conda 环境：
+整个项目统一使用根目录 `environment.yml` 定义的 `mocap_data` 环境：
 
 ```bash
-conda run --no-capture-output -n pupil_labs \
-  python -m pip install -r src/neon/requirements.txt
+conda env create -f environment.yml
+conda activate mocap_data
+python tests/setup_environment.py
 ```
 
 手机与 Ubuntu 电脑必须在同一个稳定局域网中，且 Neon Companion App 保持运行。
@@ -48,28 +49,27 @@ conda run --no-capture-output -n pupil_labs \
 自动发现 Companion，并每 5 秒执行一批 100 次 Time Echo 测量：
 
 ```bash
-conda run --no-capture-output -n pupil_labs PYTHONPATH=src python -m neon
+PYTHONPATH=src python -m neon
 ```
 
 如果自动发现失败，可指定手机 IP：
 
 ```bash
-conda run --no-capture-output -n pupil_labs PYTHONPATH=src python -m neon \
+PYTHONPATH=src python -m neon \
   --ip 192.168.1.169
 ```
 
 短时间测试：
 
 ```bash
-conda run --no-capture-output -n pupil_labs PYTHONPATH=src python -m neon \
+PYTHONPATH=src python -m neon \
   --duration 30
 ```
 
 直接运行重命名后的模块也可以：
 
 ```bash
-conda run --no-capture-output -n pupil_labs \
-  PYTHONPATH=src python -m neon.clock_offset_monitor --help
+PYTHONPATH=src python -m neon.clock_offset_monitor --help
 ```
 
 ## 输出
@@ -94,5 +94,5 @@ Ubuntu 时钟之间随时间变化的漂移；之后再将插值得到的偏移�
 查看所有参数：
 
 ```bash
-conda run --no-capture-output -n pupil_labs PYTHONPATH=src python -m neon --help
+PYTHONPATH=src python -m neon --help
 ```

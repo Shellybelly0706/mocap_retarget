@@ -46,7 +46,7 @@ from typing import Union
 import numpy as np
 import torch
 from human_body_prior.tools.omni_tools import flatten_list
-from human_body_prior.tools.omni_tools import get_support_data_dir
+from moshpp.tools.support_data import get_support_data_dir
 from human_body_prior.tools.omni_tools import makepath
 from loguru import logger
 from omegaconf import DictConfig

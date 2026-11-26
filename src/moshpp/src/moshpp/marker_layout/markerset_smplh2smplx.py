@@ -35,7 +35,7 @@ import os.path as osp
 from typing import Union
 
 import numpy as np
-from human_body_prior.tools.omni_tools import get_support_data_dir
+from moshpp.tools.support_data import get_support_data_dir
 
 
 def smplh2smplx(vids: Union[list, str]) -> Union[list, str]:

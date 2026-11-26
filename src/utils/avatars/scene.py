@@ -7,9 +7,6 @@ from xml.sax.saxutils import escape
 import mujoco
 import numpy as np
 
-from utils.avatars.assets import (
-    PROJECT_ROOT,
-)
 from utils.avatars.marker_motion import marker_color
 from utils.avatars.models import (
     AnatomicalPart,
@@ -26,25 +23,19 @@ from utils.avatars.pose import (
 from utils.avatars.scene_xml import (
     xml_values,
 )
+from utils.paths import BACKGROUND_ASSETS_DIR
 
-CHRISTMAS_CUPBOARD_WALL_TEXTURE = (
-    PROJECT_ROOT / "assets" / "christmas" / "brick_windows_v2_flipped.png"
-)
-
-
-CHRISTMAS_WINDOW_WALL_TEXTURE = (
-    PROJECT_ROOT / "assets" / "christmas" / "brick_windows_3x4.png"
-)
+CHRISTMAS_ASSETS_DIR = BACKGROUND_ASSETS_DIR / "christmas"
+CHRISTMAS_CUPBOARD_WALL_TEXTURE = CHRISTMAS_ASSETS_DIR / "brick_windows_v2_flipped.png"
 
 
-CHRISTMAS_FURNITURE_TEXTURE = (
-    PROJECT_ROOT / "assets" / "christmas" / "wood_furniture.png"
-)
+CHRISTMAS_WINDOW_WALL_TEXTURE = CHRISTMAS_ASSETS_DIR / "brick_windows_3x4.png"
 
 
-CHRISTMAS_FLOOR_TEXTURE = (
-    PROJECT_ROOT / "assets" / "christmas" / "wood_floor_carpet.png"
-)
+CHRISTMAS_FURNITURE_TEXTURE = CHRISTMAS_ASSETS_DIR / "wood_furniture.png"
+
+
+CHRISTMAS_FLOOR_TEXTURE = CHRISTMAS_ASSETS_DIR / "wood_floor_carpet.png"
 
 
 def christmas_asset_xml(enabled: bool) -> str:

@@ -47,9 +47,9 @@ class NeonImuTests(unittest.TestCase):
             data = np.zeros(3, dtype=np.dtype(fields))
             epoch = 1795690256000000000
             data["timestamp_ns"] = epoch + np.array([0, 10_000_000, 20_000_000])
-            quats = Rotation.from_euler("z", [[0], [20], [40]], degrees=True).as_quat(
-                scalar_first=True
-            )
+            quats = Rotation.from_euler("z", [[0], [20], [40]], degrees=True).as_quat()[
+                :, [3, 0, 1, 2]
+            ]
             quats[1] *= -1  # Equivalent signs must not cause a full-turn interpolation.
             for index, axis in enumerate("wxyz"):
                 data[f"quaternion_{axis}"] = quats[:, index]
