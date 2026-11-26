@@ -1,0 +1,47 @@
+{
+  "surface_model_type": "smplx",
+  "markersets": [
+    {
+      "type": "body",
+      "distance_from_skin": 0.0095,
+      "indices": {
+        "WaistLBack": null,
+        "BackLeft": null,
+        "LShoulderBack": null,
+        "LShoulderTop": null,
+        "BackTop": null,
+        "RShoulderBack": null,
+        "RShoulderTop": null,
+        "HeadSide": null,
+        "Chest": null,
+        "WaistRBack": null,
+        "RWristIn": null,
+        "WaistRFront": null,
+        "HeadFront": null,
+        "BackRight": null,
+        "RElbowOut": null,
+        "RWristOut": null,
+        "RHandOut": null,
+        "WaistLFront": null,
+        "HeadTop": null,
+        "LUArmHigh": null,
+        "LWristOut": null,
+        "LElbowOut": null,
+        "RUArmHigh": null,
+        "LHandOut": null,
+        "LWristIn": null
+      }
+    }
+  ],
+  "marker_sources": {},
+  "layout_metadata": {
+    "source_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/Zekun_upper_2.c3d",
+    "source_format": "c3d",
+    "official_marker_database": "/media/fiona/LinuxData/mocap_retarget/moshpp/src/moshpp/marker_layout/marker_vids.py",
+    "official_alias_database": "/media/fiona/LinuxData/mocap_retarget/moshpp/src/moshpp/marker_layout/labels_map.py",
+    "model_path": null,
+    "model_sha256": null,
+    "topology_vertex_count": null,
+    "policy": "Only exact official labels/aliases are auto-filled; all other vertices require manual surface clicks and may remain null."
+  }
+}
