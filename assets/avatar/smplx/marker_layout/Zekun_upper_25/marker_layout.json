@@ -1,0 +1,213 @@
+{
+  "surface_model_type": "smplx",
+  "markersets": [
+    {
+      "type": "body",
+      "distance_from_skin": 0.0,
+      "indices": {
+        "WaistLBack": 5490,
+        "BackLeft": 3892,
+        "LShoulderBack": 5606,
+        "LShoulderTop": 5627,
+        "BackTop": 4280,
+        "RShoulderBack": 8315,
+        "RShoulderTop": 7218,
+        "HeadSide": 1654,
+        "Chest": 5935,
+        "WaistRBack": 6278,
+        "RWristIn": 7584,
+        "WaistRFront": 7157,
+        "HeadFront": 3028,
+        "BackRight": 7188,
+        "RElbowOut": 7017,
+        "RWristOut": 7409,
+        "RHandOut": 7978,
+        "WaistLFront": 4420,
+        "HeadTop": 583,
+        "LUArmHigh": 4024,
+        "LWristOut": 4810,
+        "LElbowOut": 4294,
+        "RUArmHigh": 7258,
+        "LHandOut": 4807,
+        "LWristIn": 4799
+      }
+    }
+  ],
+  "marker_sources": {
+    "WaistLBack": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "BackLeft": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "LShoulderBack": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "LShoulderTop": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "BackTop": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "RShoulderBack": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "RShoulderTop": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "HeadSide": {
+      "method": "stagei_neutral_frame_calibration",
+      "calibration_sequence": "Zekun_upper_righthand_added_1.c3d",
+      "calibration_frame": 0,
+      "previous_vertex": 3039,
+      "calibration_round1_vertex": 1867,
+      "calibration_round2_vertex": 1654,
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "Chest": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "WaistRBack": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "RWristIn": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "WaistRFront": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "HeadFront": {
+      "method": "stagei_neutral_frame_calibration",
+      "calibration_sequence": "Zekun_upper_righthand_added_1.c3d",
+      "calibration_frame": 0,
+      "previous_vertex": 2088,
+      "calibration_round1_vertex": 3027,
+      "calibration_round2_vertex": 3028,
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "BackRight": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "RElbowOut": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "RWristOut": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "RHandOut": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "WaistLFront": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "HeadTop": {
+      "method": "stagei_neutral_frame_calibration",
+      "calibration_sequence": "Zekun_upper_righthand_added_1.c3d",
+      "calibration_frame": 0,
+      "previous_vertex": 2132,
+      "calibration_round1_vertex": 632,
+      "calibration_round2_vertex": 583,
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "LUArmHigh": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "LWristOut": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "LElbowOut": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "RUArmHigh": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "LHandOut": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    },
+    "LWristIn": {
+      "method": "manual_surface_click",
+      "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+      "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+      "duplicate_vertex_confirmed": false
+    }
+  },
+  "layout_metadata": {
+    "source_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/Zekun_upper_2.c3d",
+    "source_format": "c3d",
+    "official_marker_database": "/media/fiona/LinuxData/mocap_retarget/moshpp/src/moshpp/marker_layout/marker_vids.py",
+    "official_alias_database": "/media/fiona/LinuxData/mocap_retarget/moshpp/src/moshpp/marker_layout/labels_map.py",
+    "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+    "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+    "topology_vertex_count": 10475,
+    "policy": "Only exact official labels/aliases are auto-filled; all other vertices require manual surface clicks and may remain null."
+  }
+}

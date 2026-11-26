@@ -1,0 +1,331 @@
+{
+  "surface_model_type": "smplx",
+  "markersets": [
+    {
+      "type": "body",
+      "distance_from_skin": 0.0,
+      "indices": {
+        "RShoulderBack": 8315,
+        "WaistLBack": 5490,
+        "BackTop": 4280,
+        "RShoulderTop": 7218,
+        "LShoulderTop": 5627,
+        "HeadSide": 3039,
+        "HeadFront": 2088,
+        "LShoulderBack": 5606,
+        "LHandOut": 4807,
+        "BackLeft": 3892,
+        "LWristOut": 4810,
+        "Chest": 5935,
+        "WaistLFront": 4420,
+        "RWristIn": 7584,
+        "WaistRFront": 7157,
+        "WaistRBack": 6278,
+        "RUArmHigh": 7258,
+        "BackRight": 7188,
+        "CustomMarker1": null,
+        "RWristOut": 7409,
+        "RHandOut": 7978,
+        "CustomMarker3": null,
+        "CustomMarker6": null,
+        "RElbowOut": 7017,
+        "CustomMarker4": null,
+        "LUArmHigh": 4024,
+        "CustomMarker5": null,
+        "LWristIn": 4799,
+        "HeadTop": 2132,
+        "CustomMarker2": null,
+        "LElbowOut": 4294,
+        "CustomMarker7": null
+      }
+    }
+  ],
+  "marker_sources": {
+    "RShoulderBack": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "RShoulderBack",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "WaistLBack": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "WaistLBack",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "BackTop": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "BackTop",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "RShoulderTop": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "RShoulderTop",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "LShoulderTop": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "LShoulderTop",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "HeadSide": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "HeadSide",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "HeadFront": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "HeadFront",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "LShoulderBack": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "LShoulderBack",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "LHandOut": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "LHandOut",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "BackLeft": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "BackLeft",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "LWristOut": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "LWristOut",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "Chest": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "Chest",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "WaistLFront": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "WaistLFront",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "RWristIn": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "RWristIn",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "WaistRFront": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "WaistRFront",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "WaistRBack": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "WaistRBack",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "RUArmHigh": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "RUArmHigh",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "BackRight": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "BackRight",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "RWristOut": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "RWristOut",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "RHandOut": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "RHandOut",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "RElbowOut": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "RElbowOut",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "LUArmHigh": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "LUArmHigh",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "LWristIn": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "LWristIn",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "HeadTop": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "HeadTop",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    },
+    "LElbowOut": {
+      "method": "reference_layout_exact_label",
+      "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+      "reference_label": "LElbowOut",
+      "reference_source": {
+        "method": "manual_surface_click",
+        "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+        "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+        "duplicate_vertex_confirmed": false
+      }
+    }
+  },
+  "layout_metadata": {
+    "source_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/Zekun_upper_righthand_added_1.c3d",
+    "source_format": "c3d",
+    "official_marker_database": "/media/fiona/LinuxData/mocap_retarget/moshpp/src/moshpp/marker_layout/marker_vids.py",
+    "official_alias_database": "/media/fiona/LinuxData/mocap_retarget/moshpp/src/moshpp/marker_layout/labels_map.py",
+    "reference_layout": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+    "model_path": "/media/fiona/LinuxData/mocap_retarget/mocap_data/data/smplx/SMPLX_NEUTRAL.pkl",
+    "model_sha256": "381c808965deb4f5e845f8c3eddb0cd69930cc72e5774ce4f34c4ce3cf058361",
+    "topology_vertex_count": 10475,
+    "policy": "Only exact official labels/aliases and exact labels from the explicit reference layout are auto-filled; all other vertices require manual surface clicks and may remain null."
+  }
+}
