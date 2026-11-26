@@ -222,15 +222,16 @@ __marimo__/
 # Third Party Libraries
 #   Ignore directories containing third-party libraries that are not part of the project.
 #   This is useful for projects that include third-party libraries in the source tree.
-# moshpp/
-# mesh/
+# src/moshpp/
+# src/mesh/
 
 # Data files
 #   Ignore directories containing data files that are collected as part of the project.
-mocap_data/data/
+/data/*
+!/data/.gitkeep
 moshpp_outputs/
 pupil_labs/
-neon/data/
+src/neon/data/
 sync/
 
 # IDE settings

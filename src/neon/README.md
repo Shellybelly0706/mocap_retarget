@@ -28,7 +28,7 @@ Time Echo 的时间戳分辨率是 1 ms。程序通过重复测量、选择低�
 
 ```bash
 conda run --no-capture-output -n pupil_labs \
-  python -m pip install -r neon/requirements.txt
+  python -m pip install -r src/neon/requirements.txt
 ```
 
 手机与 Ubuntu 电脑必须在同一个稳定局域网中，且 Neon Companion App 保持运行。
@@ -48,20 +48,20 @@ conda run --no-capture-output -n pupil_labs \
 自动发现 Companion，并每 5 秒执行一批 100 次 Time Echo 测量：
 
 ```bash
-conda run --no-capture-output -n pupil_labs python -m neon
+conda run --no-capture-output -n pupil_labs PYTHONPATH=src python -m neon
 ```
 
 如果自动发现失败，可指定手机 IP：
 
 ```bash
-conda run --no-capture-output -n pupil_labs python -m neon \
+conda run --no-capture-output -n pupil_labs PYTHONPATH=src python -m neon \
   --ip 192.168.1.169
 ```
 
 短时间测试：
 
 ```bash
-conda run --no-capture-output -n pupil_labs python -m neon \
+conda run --no-capture-output -n pupil_labs PYTHONPATH=src python -m neon \
   --duration 30
 ```
 
@@ -69,7 +69,7 @@ conda run --no-capture-output -n pupil_labs python -m neon \
 
 ```bash
 conda run --no-capture-output -n pupil_labs \
-  python -m neon.clock_offset_monitor --help
+  PYTHONPATH=src python -m neon.clock_offset_monitor --help
 ```
 
 ## 输出
@@ -77,7 +77,7 @@ conda run --no-capture-output -n pupil_labs \
 默认输出目录：
 
 ```text
-neon/time_sync/YYYYMMDD_HHMMSS/
+src/neon/time_sync/YYYYMMDD_HHMMSS/
 ├── session.json
 └── clock_offsets.jsonl
 ```
@@ -94,5 +94,5 @@ Ubuntu 时钟之间随时间变化的漂移；之后再将插值得到的偏移�
 查看所有参数：
 
 ```bash
-conda run --no-capture-output -n pupil_labs python -m neon --help
+conda run --no-capture-output -n pupil_labs PYTHONPATH=src python -m neon --help
 ```

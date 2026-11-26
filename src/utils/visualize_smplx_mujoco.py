@@ -21,13 +21,13 @@ import mujoco.viewer
 import numpy as np
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RESULT = (
     ROOT
     / "moshpp_outputs/Zekun_upper_righthand_added_1_fingers_full/1112/c3d"
     / "Skeleton_Zixuan/Zekun_upper_righthand_added_1_stageii.npz"
 )
-DEFAULT_MODEL = ROOT / "mocap_data/data/smplx/SMPLX_NEUTRAL.npz"
+DEFAULT_MODEL = ROOT / "data/smplx/SMPLX_NEUTRAL.npz"
 
 # SMPL-X is Y-up.  MuJoCo scenes conventionally use Z-up.  For row vectors,
 # points are converted with p_mj = p_smplx @ SMPLX_TO_MUJOCO.T.

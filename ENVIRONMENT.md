@@ -1,6 +1,6 @@
 # `mocap_data` environment
 
-Create and verify the environment with:
+Run commands from the repository root. Create and verify the environment with:
 
 ```bash
 conda env create -f environment.yml
@@ -22,9 +22,9 @@ List the six CSV takes, then open exactly one by its 1-based number:
 
 ```bash
 conda run --no-capture-output -n mocap_data \
-  python scripts/compare_1105_exports.py --list
+  python src/utils/compare_1105_exports.py --list
 conda run --no-capture-output -n mocap_data \
-  python scripts/compare_1105_exports.py 1
+  python src/utils/compare_1105_exports.py 1
 ```
 
 The viewer displays CSV points and rigid bodies without skeleton links. Use

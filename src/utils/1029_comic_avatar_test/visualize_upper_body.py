@@ -33,7 +33,7 @@ SKIN_MATERIAL = "skin"
 SHIRT_MATERIAL = "shirt"
 TROUSERS_MATERIAL = "trousers"
 FINGER_NAMES = ("Thumb", "Index", "Middle", "Ring", "Pinky")
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 CHRISTMAS_CUPBOARD_WALL_TEXTURE = (
     PROJECT_ROOT / "assets" / "christmas" / "brick_windows_v2_flipped.png"
 )
@@ -234,7 +234,7 @@ def load_avatar_asset(config: AvatarConfig) -> AvatarAsset:
     path = config.skin
     if not path.is_file():
         raise FileNotFoundError(
-            f"Avatar asset not found: {path}. Run scripts/convert_vrm_avatar.py "
+            f"Avatar asset not found: {path}. Run src/utils/1029_comic_avatar_test/convert_vrm_avatar.py "
             f"{config.source} {config.skin} --upper-body to generate it."
         )
     with np.load(path, allow_pickle=False) as archive:

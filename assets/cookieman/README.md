@@ -1,13 +1,13 @@
 # Cookieman upper-body asset
 
 `upper_body_skin.npz` and `avatar_texture.png` are generated from
-`../Cookieman.vrm` for `scripts/visualize_upper_body.py`.
+`../Cookieman.vrm` for `src/utils/1029_comic_avatar_test/visualize_upper_body.py`.
 
 Regenerate the derived files from the project root:
 
 ```bash
 conda run --no-capture-output -n mocap_data \
-  python scripts/convert_vrm_avatar.py \
+  python src/utils/1029_comic_avatar_test/convert_vrm_avatar.py \
   assets/Cookieman.vrm assets/cookieman/upper_body_skin.npz \
   --upper-body
 ```

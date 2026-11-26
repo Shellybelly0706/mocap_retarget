@@ -46,7 +46,7 @@ try:
     )
 except ImportError:
     try:
-        from scripts.sync_motive_neon import (
+        from .sync_motive_neon import (
             make_clock_converter,
             read_clock_anchors,
             read_neon_time_file,
@@ -58,7 +58,7 @@ except ImportError:
         ) from exc
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "sync"
 NS_PER_SECOND = 1_000_000_000
 

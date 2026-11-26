@@ -10,13 +10,13 @@ import torch
 from human_body_prior.body_model.body_model import BodyModel
 
 
-ROOT = Path("/media/fiona/LinuxData/mocap_retarget")
+ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RESULT = (
     ROOT
     / "moshpp_outputs/Zekun_upper_1_full/1112/c3d/Skeleton_Zixuan"
     / "Zekun_upper_1_stageii.npz"
 )
-DEFAULT_MODEL = ROOT / "mocap_data/data/smplx/SMPLX_NEUTRAL.npz"
+DEFAULT_MODEL = ROOT / "data/smplx/SMPLX_NEUTRAL.npz"
 
 
 def as_tensor(value):

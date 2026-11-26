@@ -4,7 +4,7 @@
 This is an offline synchronizer for the following acquisition setup:
 
 * Pupil Labs Time Echo is measured continuously between Neon Companion and
-  Ubuntu.  ``neon/clock_offset_monitor.py`` writes ``clock_offsets.jsonl``.
+  Ubuntu.  ``src/neon/clock_offset_monitor.py`` writes ``clock_offsets.jsonl``.
 * Motive and Neon cannot communicate during capture.
 * One or more physical events are identified in both recordings after export.
 
@@ -17,18 +17,18 @@ Examples
 --------
 Using direct Neon timestamps (integer values are Unix nanoseconds)::
 
-    python scripts/sync_motive_neon.py \
+    python src/utils/sync_motive_neon.py \
       --motive-csv mocap.csv \
-      --offset-log neon/time_sync/SESSION/clock_offsets.jsonl \
+      --offset-log src/neon/time_sync/SESSION/clock_offsets.jsonl \
       --anchor 120=1795515870123456789 \
       --anchor 1700=1795515883298765432 \
       --output-csv motive_ubuntu_timestamps.csv
 
 Using indices from a Neon scene-camera or IMU time file::
 
-    python scripts/sync_motive_neon.py \
+    python src/utils/sync_motive_neon.py \
       --motive-csv mocap.csv \
-      --offset-log neon/time_sync/SESSION/clock_offsets.jsonl \
+      --offset-log src/neon/time_sync/SESSION/clock_offsets.jsonl \
       --neon-time-file "Neon Scene Camera v1 ps1.time" \
       --anchor-index 120=35 \
       --anchor-index 1700=984 \
@@ -36,9 +36,9 @@ Using indices from a Neon scene-camera or IMU time file::
 
 Automatically matching Motive head rotation against Neon IMU gyroscope data::
 
-    python scripts/sync_motive_neon.py \
+    python src/utils/sync_motive_neon.py \
       --motive-csv mocap.csv \
-      --offset-log neon/time_sync/SESSION/clock_offsets.jsonl \
+      --offset-log src/neon/time_sync/SESSION/clock_offsets.jsonl \
       --auto-align \
       --neon-imu-raw "NEON_RECORDING/imu/imu ps1.raw" \
       --neon-imu-time "NEON_RECORDING/imu/imu ps1.time" \

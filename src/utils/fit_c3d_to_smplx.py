@@ -10,14 +10,14 @@ import numpy as np
 from moshpp.mosh_head import MoSh, run_moshpp_once
 
 
-ROOT = Path("/media/fiona/LinuxData/mocap_retarget")
-MODEL_DIR = ROOT / "mocap_data/data/smplx"
+ROOT = Path(__file__).resolve().parents[2]
+MODEL_DIR = ROOT / "data/smplx"
 
 SEQUENCES = {
     "upper": {
-        "c3d": ROOT / "mocap_data/data/1112/c3d/Zekun_upper_1.c3d",
+        "c3d": ROOT / "data/1112/c3d/Zekun_upper_1.c3d",
         "marker_layout": ROOT
-        / "mocap_data/data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
+        / "data/1112/c3d/marker_layout/Zekun_upper_25/marker_layout.json",
         "subject_id": 0,
         "least_avail_markers": 1.0,
         "optimize_fingers": False,
@@ -26,9 +26,9 @@ SEQUENCES = {
     },
     "righthand": {
         "c3d": ROOT
-        / "mocap_data/data/1112/c3d/Zekun_upper_righthand_1.c3d",
+        / "data/1112/c3d/Zekun_upper_righthand_1.c3d",
         "marker_layout": ROOT
-        / "mocap_data/data/1112/c3d/marker_layout/Zekun_upper_righthand_32/marker_layout.json",
+        / "data/1112/c3d/marker_layout/Zekun_upper_righthand_32/marker_layout.json",
         # Body and hand markers live in separate Motive namespaces. -1 keeps both.
         "subject_id": -1,
         # Three wrist/hand labels occur in both namespaces, so the C3D contains
@@ -40,9 +40,9 @@ SEQUENCES = {
     },
     "righthand-added": {
         "c3d": ROOT
-        / "mocap_data/data/1112/c3d/Zekun_upper_righthand_added_1.c3d",
+        / "data/1112/c3d/Zekun_upper_righthand_added_1.c3d",
         "marker_layout": ROOT
-        / "mocap_data/data/1112/c3d/marker_layout/Zekun_upper_righthand_added_32/marker_layout.json",
+        / "data/1112/c3d/marker_layout/Zekun_upper_righthand_added_32/marker_layout.json",
         "subject_id": 0,
         "least_avail_markers": 1.0,
         "optimize_fingers": True,
@@ -126,7 +126,7 @@ def build_overrides(mode, sequence):
         "moshpp.stagei_frame_picker.least_avail_markers": sequence_cfg[
             "least_avail_markers"
         ],
-        "dirs.support_base_dir": str(ROOT / "moshpp/support_data"),
+        "dirs.support_base_dir": str(ROOT / "src/moshpp/support_data"),
         "dirs.work_base_dir": str(ROOT / "moshpp_outputs" / output_name),
         "dirs.marker_layout.fname": str(marker_layout),
         "runtime.stagei_only": False,

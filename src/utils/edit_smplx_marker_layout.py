@@ -1098,8 +1098,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--moshpp-root",
         type=Path,
-        default=Path(__file__).resolve().parents[2] / "moshpp",
-        help="MoSh++ repository root (default: sibling ../moshpp)",
+        default=Path(__file__).resolve().parents[2] / "src" / "moshpp",
+        help="MoSh++ repository root (default: src/moshpp)",
     )
     parser.add_argument(
         "--initialize-only",

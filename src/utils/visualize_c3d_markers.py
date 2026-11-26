@@ -20,9 +20,8 @@ import mujoco
 import numpy as np
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY_ROOT = PROJECT_ROOT.parent
-DEFAULT_C3D_READER = REPOSITORY_ROOT / "moshpp/src/moshpp/tools/c3d.py"
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_C3D_READER = REPOSITORY_ROOT / "src/moshpp/src/moshpp/tools/c3d.py"
 UNIT_TO_METERS = {
     "m": 1.0,
     "meter": 1.0,

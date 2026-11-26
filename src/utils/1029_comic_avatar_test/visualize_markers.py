@@ -21,7 +21,7 @@ import pandas as pd
 from scipy.spatial.transform import Rotation
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_CSV = (
     PROJECT_ROOT
     / "data"

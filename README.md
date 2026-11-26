@@ -6,7 +6,7 @@ result in MuJoCo. It also includes utilities for Motive CSV/C3D inspection,
 marker-layout authoring, and experimental avatar visualization.
 
 The current fitting pipeline is configured for the `Zekun_upper` captures in
-`mocap_data/data/1112`. Those captures are local data and are not committed to
+`data/1112`. Those captures are local data and are not committed to
 Git.
 
 ## Workflow
@@ -24,19 +24,18 @@ by four to 30 Hz.
 
 ```text
 .
-├── scripts/
-│   ├── fit_c3d_to_smplx.py       # C3D -> MoSh++ -> AMASS-style NPZ
-│   ├── render_moshpp_result.py    # headless mesh/marker MP4 renderer
-│   └── visualize_smplx_mujoco.py # skinned SMPL-X MuJoCo viewer
-├── neon_realtime/                 # Pupil Labs Neon Wi-Fi live receiver
-├── mocap_data/
-│   ├── environment.yml           # Python 3.12 data/viewer environment
-│   ├── ENVIRONMENT.md            # data tooling notes
-│   ├── scripts/                  # conversion, inspection, and layout tools
-│   └── data/                     # local captures and SMPL-X assets (ignored)
-├── moshpp/                       # bundled, locally adapted MoSh++ source
-├── mesh/                         # bundled psbody.mesh source
-└── moshpp_outputs/               # generated fitting results
+├── assets/                       # avatars, textures, and derived skins
+├── data/                         # local captures and SMPL-X assets (ignored)
+├── environment.yml               # Python 3.12 data/viewer environment
+├── ENVIRONMENT.md                # data tooling notes
+├── src/
+│   ├── utils/                    # fitting, rendering, data tools, and sync
+│   │   └── 1029_comic_avatar_test/ # experimental avatar tools
+│   ├── neon/                     # Pupil Labs Neon clock-offset monitor
+│   ├── moshpp/                   # bundled, locally adapted MoSh++ source
+│   └── mesh/                     # bundled psbody.mesh source
+├── tests/
+└── moshpp_outputs/               # generated fitting results (ignored)
 ```
 
 ## Environments
@@ -48,18 +47,18 @@ NumPy.
 ### Data inspection and MuJoCo
 
 ```bash
-conda env create -f mocap_data/environment.yml
+conda env create -f environment.yml
 conda activate mocap_data
 python -c "import numpy, pandas, scipy, h5py, matplotlib, mujoco; print('environment OK')"
 ```
 
-See [`mocap_data/ENVIRONMENT.md`](mocap_data/ENVIRONMENT.md) for Motive CSV and
+See [`ENVIRONMENT.md`](ENVIRONMENT.md) for Motive CSV and
 TAK notes.
 
 ### MoSh++ fitting and rendering
 
 Create a separate Python 3.10 environment and follow the complete installation
-instructions in [`moshpp/README.md`](moshpp/README.md). The key constraints are:
+instructions in [`src/moshpp/README.md`](src/moshpp/README.md). The key constraints are:
 
 - Python 3.10 or older;
 - `numpy<1.24` and `cython<3`;
@@ -74,21 +73,21 @@ is active and that the local `moshpp` package is importable.
 The fitting profiles expect these files relative to the repository root:
 
 ```text
-mocap_data/data/1112/c3d/*.c3d
-mocap_data/data/1112/c3d/marker_layout/*/marker_layout.json
-mocap_data/data/smplx/SMPLX_NEUTRAL_moshpp.pkl
-mocap_data/data/smplx/SMPLX_NEUTRAL.npz
-mocap_data/data/smplx/moshpp_support/pose_body_prior.pkl
-mocap_data/data/smplx/moshpp_support/pose_hand_prior.npz
+data/1112/c3d/*.c3d
+data/1112/c3d/marker_layout/*/marker_layout.json
+data/smplx/SMPLX_NEUTRAL_moshpp.pkl
+data/smplx/SMPLX_NEUTRAL.npz
+data/smplx/moshpp_support/pose_body_prior.pkl
+data/smplx/moshpp_support/pose_hand_prior.npz
 ```
 
 SMPL-X model files require acceptance of the SMPL-X license and must be
 obtained separately. Capture data, licensed model files, and generated results
 should not be committed.
 
-> **Path note:** `fit_c3d_to_smplx.py` and `render_moshpp_result.py` currently
-> define `ROOT` as `/media/fiona/LinuxData/mocap_retarget`. Update that constant
-> if the repository is moved.
+Scripts resolve asset, capture, and output paths relative to the repository
+root. Install bundled libraries from `src/mesh` and `src/moshpp`; existing
+editable installations need to be reinstalled after this move.
 
 ## Fit C3D to SMPL-X
 
@@ -97,7 +96,7 @@ and resolved MoSh++ configuration without starting optimization:
 
 ```bash
 conda activate moshpp
-python scripts/fit_c3d_to_smplx.py \
+python src/utils/fit_c3d_to_smplx.py \
   --sequence upper \
   --mode smoke \
   --check-only
@@ -107,10 +106,10 @@ Then run a short smoke fit or the complete sequence:
 
 ```bash
 # First 120 source frames, sampled to 30 fitted frames
-python scripts/fit_c3d_to_smplx.py --sequence upper --mode smoke
+python src/utils/fit_c3d_to_smplx.py --sequence upper --mode smoke
 
 # Entire capture at 30 Hz
-python scripts/fit_c3d_to_smplx.py --sequence upper --mode full
+python src/utils/fit_c3d_to_smplx.py --sequence upper --mode full
 ```
 
 Available profiles are:
@@ -124,7 +123,7 @@ Available profiles are:
 For example, fit the capture with the added right-hand markers:
 
 ```bash
-python scripts/fit_c3d_to_smplx.py \
+python src/utils/fit_c3d_to_smplx.py \
   --sequence righthand-added \
   --mode full
 ```
@@ -151,7 +150,7 @@ observed markers in red and fitted markers in green:
 
 ```bash
 conda activate moshpp
-python scripts/render_moshpp_result.py \
+python src/utils/render_moshpp_result.py \
   --result moshpp_outputs/Zekun_upper_1_full/1112/c3d/Skeleton_Zixuan/Zekun_upper_1_stageii.npz \
   --output /tmp/Zekun_upper_1_preview.mp4
 ```
@@ -165,7 +164,7 @@ Validate the model and result without opening a GUI:
 
 ```bash
 conda activate mocap_data
-python scripts/visualize_smplx_mujoco.py \
+python src/utils/visualize_smplx_mujoco.py \
   --result moshpp_outputs/Zekun_upper_righthand_added_1_fingers_full/1112/c3d/Skeleton_Zixuan/Zekun_upper_righthand_added_1_stageii.npz \
   --validate-only
 ```
@@ -177,7 +176,7 @@ body, and places the fitted motion in a table-and-cup scene. Add
 
 ## Supporting tools
 
-Common utilities under `mocap_data/scripts` include:
+Common utilities under `src/utils` include:
 
 - `visualize_c3d_markers.py`: inspect C3D markers and skeleton data;
 - `convert_motive_csv_to_mosh_npz.py`: convert a Motive CSV to marker NPZ;
@@ -188,22 +187,22 @@ Common utilities under `mocap_data/scripts` include:
 Every script supports `--help`; inspection tools also provide a non-GUI
 `--check-only` or `--validate-only` mode where applicable.
 
-## Receive Pupil Labs Neon data over Wi-Fi
+## Monitor Pupil Labs Neon clock offsets
 
-The standalone receiver under [`neon_realtime/`](neon_realtime/) records live
-gaze, IMU, eye-event, and scene-camera streams from the Neon Companion App.
-See [`neon_realtime/README.md`](neon_realtime/README.md) for installation,
-network setup, output formats, and examples. A minimal session is:
+The monitor under [`src/neon/`](src/neon/) records the clock offset between
+Ubuntu and the Neon Companion App for offline timestamp synchronization.
+See [`src/neon/README.md`](src/neon/README.md) for setup and output details.
+Run it from the repository root:
 
 ```bash
-python -m pip install -r neon_realtime/requirements.txt
-python -m neon_realtime --streams gaze imu
+python -m pip install -r src/neon/requirements.txt
+PYTHONPATH=src python -m neon
 ```
 
 ## Licensing and citation
 
 The bundled MoSh++ and mesh components retain their upstream licenses. MoSh++
 is licensed for non-commercial scientific research; read
-[`moshpp/LICENSE`](moshpp/LICENSE) before use. If this workflow contributes to
+[`src/moshpp/LICENSE`](src/moshpp/LICENSE) before use. If this workflow contributes to
 published research, cite AMASS/MoSh++ and the original MoSh work as described
-in [`moshpp/README.md`](moshpp/README.md#citation).
+in [`src/moshpp/README.md`](src/moshpp/README.md#citation).
