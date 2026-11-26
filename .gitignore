@@ -231,6 +231,7 @@ mocap_data/data/
 moshpp_outputs/
 pupil_labs/
 neon/data/
+sync/
 
 # IDE settings
 .vscode/
