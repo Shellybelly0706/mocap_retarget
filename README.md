@@ -196,6 +196,44 @@ sample rows and C3D-relative times. See
 [`ENVIRONMENT.md`](ENVIRONMENT.md#legacy-mosh-reconstruction)
 for setup, layout reuse and the Stage I/II workflow.
 
+Once the pending `psbody.smpl` component is available, the paired viewer can
+run the full 1126 Stage I/II job and immediately inspect its fitted avatar:
+
+```bash
+python tests/visualize_recording.py data/1126/aligned/recording_1 \
+  --fit-smplx \
+  --fit-c3d "data/1126/mocap/c3d/Take 2026-11-26 11.50.55 AM.c3d" \
+  --fit-output data/1126/reconstruction/recording_1/full
+```
+
+The output directory contains the Stage I and Stage II solver results, an
+AMASS-style SMPL-X parameter NPZ, the optimized working layout, and provenance
+reports. This integrated job fits every native 120 Hz C3D frame because the
+authoritative Neon mapping is not a perfectly regular every-fourth-frame
+sequence. The viewer then selects the exact 450 Motive source frame IDs; it
+does not interpolate missing fitted frames or modify the global-timestamp
+alignment. It also estimates and validates one rigid world transform from
+same-frame marker observations because this capture's C3D and Motive CSV
+exports use different X/Y axis directions; that transform changes coordinates
+for display only, not fitted parameters or source data. `--fit-smplx
+--check-only` writes preflight diagnostics without
+starting optimization. This legacy job fits the validated neutral model; its
+shape parameters must not be applied to the female or male template.
+
+Fitted playback normally retains the exported Motive skeleton for comparison.
+Use `--skeleton-source smplx` to replace it with the fitted avatar's own
+55-joint SMPL-X hierarchy:
+
+```bash
+python tests/visualize_recording.py data/1126/aligned/recording_1 \
+  --smplx-result data/1126/reconstruction/recording_1/full/mocap/c3d/Zixuan_Skeleton/Take_2026-11-26_11.50.55_AM_stageii.npz \
+  --skeleton-source smplx
+```
+
+Because those joints correctly lie inside the body, this mode composites an
+x-ray skeleton pass over the opaque skin without changing any 3-D joint or
+mesh coordinates. The player exposes separate skeleton and avatar-skin toggles.
+
 ## Align and inspect the first 1126 recording
 
 Use the existing `mocap_data` environment. Preprocessing writes a new derived
@@ -241,8 +279,9 @@ The player has a MuJoCo viewport on the left and the recorded front video on
 the right. One frame index drives both. Play/pause, previous/next, restart,
 speed, looping and the timeline control both panels. Drag the left view to
 orbit, Shift-drag to pan, and scroll to zoom. Space toggles playback, arrows
-step, and Home restarts. Debug controls show the solved skeleton, raw markers,
-and camera optical axes: **X right/red, Y down/green, Z forward/blue**.
+step, and Home restarts. Debug controls show the selected Motive/SMPL-X
+skeleton, avatar skin, raw markers, and camera optical axes: **X right/red, Y
+down/green, Z forward/blue**.
 
 The player defaults to the solved skeleton with a translucent head reference.
 This is **not a SMPL-X avatar**. The imported neutral model has been validated

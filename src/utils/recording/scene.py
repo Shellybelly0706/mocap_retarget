@@ -18,6 +18,7 @@ from utils.neon.mount import CAD_BRIDGE_M, attach_neon, load_mount, mount_transf
 from utils.optitrack.skeleton import SKELETON_PARENTS
 from utils.paths import ASSETS_DIR
 from utils.recording.session import AlignedSession
+from utils.smplx.fitted import load_fitted_motion
 from utils.smplx.neutral import load_neutral_model, retarget_neutral
 
 
@@ -28,13 +29,36 @@ class RecordingScene:
         model_path: Path | None = None,
         mount_path: Path | None = None,
         use_imu: bool = False,
+        fitted_result_path: Path | None = None,
+        skeleton_source: str = "motive",
     ):
+        if fitted_result_path and not model_path:
+            raise ValueError("A fitted SMPL-X result requires its matching NPZ model")
+        if skeleton_source not in {"motive", "smplx"}:
+            raise ValueError("Skeleton source must be 'motive' or 'smplx'")
+        if skeleton_source == "smplx" and not model_path:
+            raise ValueError("The SMPL-X skeleton requires an SMPL-X avatar")
         self.session = session
         self.mount = load_mount(mount_path)
+        self.skeleton_source = skeleton_source
+        self.skeleton_label = (
+            "SMPL-X fitted skeleton"
+            if skeleton_source == "smplx" and fitted_result_path
+            else (
+                "SMPL-X retargeted skeleton"
+                if skeleton_source == "smplx"
+                else "Motive solved skeleton"
+            )
+        )
+        self.skeleton_xray = skeleton_source == "smplx"
         self.label = (
-            "SMPL-X neutral (visual retargeting)"
-            if model_path
-            else "OptiTrack skeleton"
+            "MoSh++ fitted SMPL-X (marker-based reconstruction)"
+            if fitted_result_path
+            else (
+                "SMPL-X neutral (visual retargeting)"
+                if model_path
+                else "OptiTrack skeleton"
+            )
         )
         self.reference = min(
             int(np.searchsorted(session.times, 0.5)), len(session.times) - 1
@@ -86,50 +110,25 @@ class RecordingScene:
         )
         self.tracks = []
         self.segment_geoms = []
+        self.skeleton_geom_names = []
         bones = session.bones
         root_name = next(iter(bones))
-        self.skeleton_names = list(bones)
-        for name, track in bones.items():
-            body = self._body(world, "bone_" + name, track[:, 4:7])
-            ET.SubElement(
-                body,
-                "geom",
-                type="sphere",
-                size="0.009",
-                rgba="0.15 0.8 0.95 1",
-                group="2",
-                contype="0",
-                conaffinity="0",
+        self.skeleton_names = []
+        if skeleton_source == "motive":
+            motive_names = list(bones)
+            motive_indices = {name: index for index, name in enumerate(motive_names)}
+            motive_parents = []
+            for name in motive_names:
+                parent = root_name if name == "Ab" else SKELETON_PARENTS.get(name)
+                motive_parents.append(motive_indices.get(parent, -1))
+            self._add_skeleton(
+                world,
+                "motive",
+                motive_names,
+                np.stack([bones[name][:, 4:7] for name in motive_names], axis=1),
+                np.asarray(motive_parents),
+                emphasized=fitted_result_path is not None,
             )
-            parent = SKELETON_PARENTS.get(name)
-            if name == "Ab":
-                parent = root_name
-            if parent in bones:
-                start, end = bones[parent][:, 4:7], track[:, 4:7]
-                vector = end - start
-                if np.any(np.linalg.norm(vector, axis=1) < 1e-9):
-                    continue
-                segment = self._body(
-                    world,
-                    "segment_" + name,
-                    (start + end) * 0.5,
-                    quaternions_aligning_z(vector),
-                )
-                geom_name = "link_" + name
-                ET.SubElement(
-                    segment,
-                    "geom",
-                    name=geom_name,
-                    type="capsule",
-                    size=f"0.005 {np.linalg.norm(vector[0])/2}",
-                    rgba="0.12 0.6 0.8 1",
-                    group="2",
-                    contype="0",
-                    conaffinity="0",
-                )
-                self.segment_geoms.append(
-                    (geom_name, np.linalg.norm(vector, axis=1) / 2)
-                )
         self.marker_geoms = []
         for index, name in enumerate(session.marker_names):
             track = session.markers[:, index]
@@ -157,15 +156,48 @@ class RecordingScene:
                 "Head markers have gaps; refusing to invent glasses orientations"
             )
         if model_path:
-            avatar = load_neutral_model(model_path)
-            positions, rotations, scale = retarget_neutral(
-                avatar, bones, head_top, head_front, self.reference
-            )
-            quats = (
-                Rotation.from_matrix(rotations.reshape(-1, 3, 3))
-                .as_quat()[:, [3, 0, 1, 2]]
-                .reshape(len(positions), 55, 4)
-            )
+            if fitted_result_path:
+                source_frames = np.asarray(
+                    [int(row["mocap_source_frame"]) for row in session.mapping],
+                    dtype=np.int64,
+                )
+                fitted = load_fitted_motion(
+                    fitted_result_path,
+                    model_path,
+                    source_frames,
+                    session.markers,
+                    session.marker_names,
+                )
+                self.fitted_registration = {
+                    "rotation": fitted.world_rotation,
+                    "translation": fitted.world_translation,
+                    "median_error_m": fitted.registration_median_error_m,
+                    "p95_error_m": fitted.registration_p95_error_m,
+                }
+                avatar = fitted.avatar
+                positions = fitted.positions
+                rotations = fitted.rotations
+                quats = fitted.quaternions
+                scale = 1.0
+            else:
+                avatar = load_neutral_model(model_path)
+                positions, rotations, scale = retarget_neutral(
+                    avatar, bones, head_top, head_front, self.reference
+                )
+                quats = (
+                    Rotation.from_matrix(rotations.reshape(-1, 3, 3))
+                    .as_quat()[:, [3, 0, 1, 2]]
+                    .reshape(len(positions), 55, 4)
+                )
+            if skeleton_source == "smplx":
+                self._add_skeleton(
+                    world,
+                    "smplx",
+                    [f"joint_{index:02d}" for index in range(55)],
+                    positions,
+                    avatar.parents,
+                    emphasized=True,
+                )
             joints = [
                 self._body(
                     world,
@@ -290,12 +322,85 @@ class RecordingScene:
         self.options = mujoco.MjvOption()
         self.options.sitegroup[5] = 1
         self.options.sitegroup[4] = 1
-        self.options.geomgroup[2] = int(not model_path)
+        self.options.geomgroup[2] = int(
+            model_path is None
+            or fitted_result_path is not None
+            or skeleton_source == "smplx"
+        )
         self.options.geomgroup[3] = 0
         self.options.geomgroup[4] = 1
         self.options.skingroup[4] = 1
         self.options.flags[mujoco.mjtVisFlag.mjVIS_SKIN] = 1
         self.set_frame(0)
+
+    def _add_skeleton(
+        self,
+        world,
+        prefix: str,
+        names: list[str],
+        positions: np.ndarray,
+        parents: np.ndarray,
+        *,
+        emphasized: bool,
+    ):
+        """Add one selected joint hierarchy to MuJoCo visualization group 2."""
+        positions = np.asarray(positions, dtype=np.float64)
+        parents = np.asarray(parents, dtype=np.int64)
+        if positions.ndim != 3 or positions.shape[1:] != (len(names), 3):
+            raise ValueError("Skeleton positions and names differ")
+        if parents.shape != (len(names),):
+            raise ValueError("Skeleton parents and names differ")
+        self.skeleton_names = list(names)
+        color = "0.02 0.15 1 1" if emphasized else "0.15 0.8 0.95 1"
+        for index, name in enumerate(names):
+            finger = prefix == "smplx" and index >= 25
+            joint_radius = 0.0045 if finger else (0.010 if emphasized else 0.009)
+            body = self._body(
+                world, f"skeleton_{prefix}_node_{index:02d}", positions[:, index]
+            )
+            joint_geom = f"skeleton_{prefix}_joint_{index:02d}"
+            ET.SubElement(
+                body,
+                "geom",
+                name=joint_geom,
+                type="sphere",
+                size=str(joint_radius),
+                rgba=color,
+                group="2",
+                contype="0",
+                conaffinity="0",
+            )
+            self.skeleton_geom_names.append(joint_geom)
+            parent = int(parents[index])
+            if parent < 0:
+                continue
+            if parent >= index:
+                raise ValueError(f"Invalid skeleton parent {parent} for joint {name}")
+            vector = positions[:, index] - positions[:, parent]
+            lengths = np.linalg.norm(vector, axis=1)
+            if np.any(lengths < 1e-9):
+                continue
+            segment = self._body(
+                world,
+                f"skeleton_{prefix}_segment_{index:02d}",
+                (positions[:, parent] + positions[:, index]) * 0.5,
+                quaternions_aligning_z(vector),
+            )
+            geom_name = f"skeleton_{prefix}_link_{index:02d}"
+            link_radius = 0.003 if finger else (0.006 if emphasized else 0.005)
+            ET.SubElement(
+                segment,
+                "geom",
+                name=geom_name,
+                type="capsule",
+                size=f"{link_radius} {lengths[0]/2}",
+                rgba=color,
+                group="2",
+                contype="0",
+                conaffinity="0",
+            )
+            self.skeleton_geom_names.append(geom_name)
+            self.segment_geoms.append((geom_name, lengths / 2))
 
     def _body(self, world, name, positions, quats=None):
         if quats is None:

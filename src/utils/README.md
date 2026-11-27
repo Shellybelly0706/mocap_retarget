@@ -69,9 +69,17 @@ separate modules: `layout_io`, `layout`, `layout_editor` and `layout_reporting`.
   source Frame/Time cells and missing data remain intact. No clock correction
   is applied. See the root README for the clock assumption and output formats.
 - `recording.session.load_session(directory)` reads that derived mapping/CSV.
-- `recording.scene.RecordingScene(session, model_path=None, mount_path=None)`
+- `recording.scene.RecordingScene(session, model_path=None, mount_path=None,
+  fitted_result_path=None, skeleton_source="motive")`
   constructs a labeled skeleton or optional local neutral SMPL-X skin together
   with head-mounted Neon CAD, real camera intrinsics and optical debug axes.
+  A fitted result is matched to the paired timeline by its preserved Motive
+  source frame IDs; missing fitted frames are reported rather than interpolated.
+  Same-frame marker observations register the MoSh++ C3D world to the paired
+  Motive CSV world, and the registration residual is validated and reported.
+  `skeleton_source="smplx"` replaces the Motive hierarchy with the avatar's
+  own 55 joints; playback uses an x-ray composite so internal joints remain
+  visible through the unchanged opaque skin.
 - `recording.player.RecordingPlayer(scene).run()` opens the paired desktop
   player. `recording.rendering.render_preview(scene, path, frame)` exports a PNG.
 - `smplx.neutral` handles the optional licensed neutral NPZ and direct visual
@@ -97,6 +105,9 @@ separate modules: `layout_io`, `layout`, `layout_editor` and `layout_reporting`.
   surface assignments; the imported 25-marker legacy body layout is validated for
   initialization on 1126. Only the separate `psbody.smpl` component remains
   pending before fitting can start.
+- `smplx.fitted.load_fitted_motion(...)` reconstructs Stage-II parameters on
+  the exact aligned recording frames and registers C3D/CSV export coordinates
+  from shared marker evidence for the paired player.
 - `smplx.kinematics.global_joint_motion(...)` computes joint transforms from poses.
 - `smplx.reconstruction.reconstruct_vertices(...)` reconstructs a fitted body.
 - `smplx.head_markers.diagnose_head_markers(result_path, model_path, output_path)` creates diagnostics without CLI parsing.

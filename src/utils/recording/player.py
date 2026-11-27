@@ -12,6 +12,7 @@ import mujoco
 import numpy as np
 from PIL import Image, ImageOps, ImageTk
 
+from utils.recording.rendering import render_mujoco
 from utils.synchronization.neon_video import read_video_frame
 
 
@@ -42,6 +43,7 @@ class RecordingPlayer:
         self.imu_frame_visible = tk.BooleanVar(value=True)
         self.imu_orientation = tk.BooleanVar(value=scene.use_imu)
         self.skeleton_visible = tk.BooleanVar(value=bool(scene.options.geomgroup[2]))
+        self.skin_visible = tk.BooleanVar(value=bool(scene.options.skingroup[4]))
         self.markers_visible = tk.BooleanVar(value=False)
         headers = ttk.Frame(self.root)
         headers.pack(fill="x", padx=10, pady=5)
@@ -102,7 +104,8 @@ class RecordingPlayer:
         for label, variable in (
             ("Camera axes (RGB = X/Y/Z)", self.axis_visible),
             ("IMU frame (top bar)", self.imu_frame_visible),
-            ("Solved skeleton", self.skeleton_visible),
+            (scene.skeleton_label, self.skeleton_visible),
+            ("Avatar skin", self.skin_visible),
             ("Raw markers", self.markers_visible),
         ):
             ttk.Checkbutton(
@@ -188,11 +191,9 @@ class RecordingPlayer:
         self.scene.use_imu = self.imu_orientation.get()
         self.scene.options.geomgroup[2] = int(self.skeleton_visible.get())
         self.scene.options.geomgroup[3] = int(self.markers_visible.get())
+        self.scene.options.skingroup[4] = int(self.skin_visible.get())
         self.scene.set_frame(self.index)
-        self.renderer.update_scene(
-            self.scene.data, camera=self.scene.camera, scene_option=self.scene.options
-        )
-        left = Image.fromarray(self.renderer.render())
+        left = Image.fromarray(render_mujoco(self.scene, self.renderer))
         video = read_video_frame(self.capture, self.index, self.video_state)
         right = Image.fromarray(cv2.cvtColor(video, cv2.COLOR_BGR2RGB))
         for i, source in enumerate((left, right)):
